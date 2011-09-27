@@ -1,0 +1,51 @@
+
+\chapter{Installing GAIA}
+\section{Getting GAIA}
+\subsection{Viewing the Source Code}
+One way to explore the GAIA source code is to go to
+http://linqs.cs.umd.edu/trac/gaia and click on Browse Source.
+This is a web interface allowing you to view the source code without
+downloading anything.  The GAIA project uses SVN as its
+revision management system.  Thus, the repository is laid
+out using standard SVN conventions where ``trunk'' contains
+the main revision of the code, ``branch'' contains different branches of the code,
+and tags contains tagged points of the code representing stable revisions.
+
+\subsection{Downloading GAIA}
+The simplest way to obtain GAIA is to download it as a jar file
+from http://linqs.cs.umd.edu/trac/gaia.  There are two jar files.
+The first, gaia.jar, contains the binary for the GAIA.
+The second file, gaia-src.jar, contains the binary, as
+well as the source code for GAIA.  Both jar files were generated
+using the Eclipse Export feature.  Thus, the jar file with the
+source code can be directly loaded into Eclipse.
+
+Note, some features of eclipse may require third party libraries.
+See \secref{thirdparty} for what those are and where to download them.
+
+\subsection{Checking out GAIA}
+Another way to acquire GAIA is to check it out directly from the SVN.
+GAIA can currently be checked out using the command:
+
+svn co http://linqs.cs.umd.edu/svn/gaia
+
+Note that by default, access to the SVN is read only so any modification
+to the code cannot be checked in directly.  For information
+on contributing your code to the project, see \secref{contributing}.
+
+\section{Third Party Libraries}
+\label{thirdparty}
+Some features of GAIA require third party libraries which are not
+including in the GAIA jar file and must be downloaded separately.
+Links to the specific versions of the libraries are available at
+http://linqs.cs.umd.edu/trac/gaia/wiki/ThirdPartyLibraries.
+
+\section{Contributing to GAIA}
+\label{contributing}
+Contributions to the GAIA code base is encouraged and welcome.
+Look at \chapref{advanced} for details about the GAIA code base
+and conventions used in the code.  Contributions can be sent
+via email to gaia-devel@cs.umd.edu.  Please include documentation
+about the changes and features you'd like to contribute and
+a jar file of the changes.
+

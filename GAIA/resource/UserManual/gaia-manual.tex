@@ -1,0 +1,139 @@
+\documentclass[letterpaper, 11pt, twoside]{report}
+\usepackage{palatino}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage[square,authoryear]{natbib}
+\usepackage{fancyhdr}
+
+\usepackage{times}
+\usepackage{subfigure}
+\usepackage{array}
+\usepackage{mdwlist}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{float}
+
+\usepackage[pdftex,backref,breaklinks=true,colorlinks,plainpages=false,pdfpagelabels=true,linkcolor=blue,citecolor=blue]{hyperref}
+%\definecolor{webgreen}{rgb}{0,0.5,0}
+
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\newcommand{\eat}[1]{}
+\newcommand{\secref}[1]{Section \ref{#1}}
+\newcommand{\chapref}[1]{Chapter \ref{#1}}
+\newcommand{\figref}[1]{Figure \ref{#1}}
+\newcommand{\defnref}[1]{Definition \ref{#1}}
+\newcommand{\claimref}[1]{Claim \ref{#1}}
+\newcommand{\algref}[1]{Algorithm \ref{#1}}
+\newcommand{\eqnref}[1]{Equation \ref{#1}}
+\newcommand{\commentout}[1]{%                                                                                                     
+}
+
+%symbols
+\newcommand{\bX}{{\bf X}}
+\newcommand{\bx}{{\bf x}}
+\newcommand{\cP}{{\cal P}}
+\newcommand{\cF}{{\cal F}}
+\newcommand{\bF}{{\bf F}}
+\newcommand{\cX}{{\cal X}}
+\newcommand{\cZ}{{\cal Z}}
+\newcommand{\cD}{{\cal D}}
+\newcommand{\cR}{{\cal R}}
+\newcommand{\cO}{{\cal O}}
+\newcommand{\bO}{{\bf O}}
+
+\newenvironment{descriptionsmallermargin} {
+\begin{basedescript}{\desclabelwidth{.05in}\setlength{\topsep}{2pt}\setlength{\itemsep}{0pt} \renewcommand{\makelabel}[1]{\bfseries##1:} } }
+{\end{basedescript}}
+
+\newenvironment{myenumerate}{\begin{list}{\arabic{foo}.}{
+        \usecounter{foo}
+        \setlength{\topsep}{3pt}
+        \setlength{\itemsep}{1pt}
+}}{ \end{list}}
+
+\newenvironment{mylist}{\begin{list}{$\bullet$}
+    {   \setlength{\itemsep}{0pt}
+        \setlength{\topsep}{0pt}}
+    }
+{\end{list}}
+
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+\newtheorem{claim}{Claim}
+
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\iffloatpage{}{\bfseries \thepage}}
+\renewcommand{\headrulewidth}{0pt}
+
+%\bibpunct{[}{]}{,}{n}{}{}
+\begin{document}
+
+\pdfbookmark[0]{Titlepage}{title}
+
+\begin{titlepage}
+\begin{center}
+{\LARGE Graph Alignment, Identification and Analysis (GAIA) \\ User Manual}\\
+\vspace{0.3in}
+{\LARGE LINQ's Group}\\
+\vspace{1in}
+{\large University of Maryland, College Park\\
+http://linqs.cs.umd.edu/trac/gaia\\
+}
+{\small\em \copyright \  Draft date \today }
+\end{center}
+\end{titlepage}
+
+\pdfbookmark[0]{Abstract}{abstract}
+
+\newpage
+\pagenumbering{roman}
+\fancypagestyle{empty}{
+\fancyhf{}
+\fancyfoot[C]{\bfseries \thepage}
+\renewcommand{\headrulewidth}{0pt}
+}
+%\include{abstract}
+
+\pdfbookmark[0]{Table of Contents}{tableofcontents}
+
+\fancypagestyle{plain}{
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+}
+\pagestyle{plain}
+\tableofcontents
+
+\newpage
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\iffloatpage{}{\bfseries \thepage}}
+\renewcommand{\headrulewidth}{0pt}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\fancypagestyle{plain}{
+\fancyhf{}
+\fancyfoot[C]{\bfseries \thepage}
+\renewcommand{\headrulewidth}{0pt}
+}
+
+\include{intro}
+\include{installation}
+\include{basic}
+\include{advance}
+\include{featureconst}
+\include{visualization}
+
+%\addcontentsline{toc}{chapter}{Bibliography}, added to beginning of bbl file
+\bibliographystyle{abbrv}
+\bibliography{gaia-manual}
+
+\end{document}
+

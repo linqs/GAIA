@@ -1,0 +1,4 @@
+DIRECTED	Attends
+NO_FEATURES
+Attends2	Person:N2	|	School:S1
+Attends1	Person:N1	|	School:S2

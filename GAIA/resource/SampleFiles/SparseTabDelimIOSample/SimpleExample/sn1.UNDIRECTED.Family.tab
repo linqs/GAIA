@@ -1,0 +1,8 @@
+UNDIRECTED	Family
+cat=cousin,sister,brother,none:type	numeric:length
+Fam3	Person:N4	Person:N1	|	type=sister:P=0.0,1.0,0.0,0.0	length=1.0
+Fam6	Person:N4	|	type=cousin:P=1.0,0.0,0.0,0.0	length=100.0
+Fam4	Person:N3	Person:N2	|	length=3.0
+Fam1	Person:N2	Person:N1	|
+Fam2	Person:N3	Person:N1	|	type=cousin:P=1.0,0.0,0.0,0.0	length=5.0
+Fam5	Person:N2	Person:N4	|	type=brother:P=0.0,0.0,1.0,0.0

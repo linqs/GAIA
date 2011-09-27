@@ -1,0 +1,87 @@
+<BODY>
+<p>
+We provide an overview of the GAIA API in the Description section below.
+</p>
+<p>
+The GAIA library was designed to support various tasks common to the
+alignment, identification, and analysis of relational data.
+As such, the GAIA library is designed to be a modular library
+and tool which supports tasks ranging from loading and generating graphs
+to applying various inference models for problems like collective classification,
+link prediction, entity resolution, and group detection.
+At the core of GAIA is the graph interface defined in the {@link linqs.gaia.graph} package.
+The graph interface was designed to be a general graph which supports
+both directed and undirected hyperedges, as well as multiple node and edge types.
+The types of the node, edge, and graph are defined by their schema id and
+corresponding schema (defined in {@link linqs.gaia.feature.schema}) which defines
+the names and types of their features (defined in {@link linqs.gaia.feature}).
+GAIA supports features which return many different types, from numbers to categorical values,
+as well as explicit ({@link linqs.gaia.feature.ExplicitFeature})
+and derived ({@link linqs.gaia.feature.DerivedFeature}) features.
+The values of explicit must be explicity specified (i.e., specified in the data or set by a model)
+where derived feature are derived from the graph by a defined function to return a value on demand
+(i.e., counting the number of neighbors with a given label).
+</p>
+<p>
+GAIA supports functionality for different ways to work with graphs.
+We now highlight a few packages which to guide new users to learning
+and understanding the various implementations available in GAIA.
+</p>
+
+<p>
+For using GAIA as a tool:
+<UL>
+<LI> {@link linqs.gaia.configurable}
+<LI> {@link linqs.gaia.experiment} (in particular {@link linqs.gaia.experiment.groovy})
+</UL>
+</p>
+
+<p>
+For learning the supported functionality, over graphs, in GAIA:
+<UL>
+<LI> {@link linqs.gaia.graph.io}
+<LI> {@link linqs.gaia.graph.generator}
+<LI> {@link linqs.gaia.graph.converter}
+<LI> {@link linqs.gaia.transformer}
+<LI> {@link linqs.gaia.filter}
+<LI> {@link linqs.gaia.graph.noise}
+<LI> {@link linqs.gaia.graph.statistic}
+<LI> {@link linqs.gaia.visualization}
+<LI> {@link linqs.gaia.model}
+<LI> {@link linqs.gaia.model.oc}
+<LI> {@link linqs.gaia.model.lp}
+<LI> {@link linqs.gaia.model.er}
+<LI> {@link linqs.gaia.model.gd}
+</UL>
+</p>
+
+<p>
+For learning the architecture of the GAIA Graph interface:
+<UL>
+<LI> {@link linqs.gaia.graph}
+<LI> {@link linqs.gaia.feature}
+<LI> {@link linqs.gaia.feature.decorable}
+<LI> {@link linqs.gaia.feature.schema}
+<LI> {@link linqs.gaia.identifiable}
+</UL>
+</p>
+
+<p>
+For useful utilities in GAIA:
+<UL>
+<LI> {@link linqs.gaia.util}
+<LI> {@link linqs.gaia.configurable}
+<LI> {@link linqs.gaia.prediction}
+<LI> {@link linqs.gaia.similarity}
+<LI> {@link linqs.gaia.log}
+</UL>
+</p>
+
+<p>
+We also note that GAIA uses third party libraries for some of its functionality.
+A list of those third party libraries, as well as which functionality in GAIA
+relies on those, are given at the
+<a href="http://linqs.cs.umd.edu/trac/gaia/wiki/ThirdPartyLibraries">Website</a> 
+</p>
+
+</BODY>. 

@@ -1,0 +1,7 @@
+UNDIRECTED	Enemy
+# If you do not want to have to specify the schema IDs of the nodes,
+# you can use the next line to declare it for all nodes in the file
+NODESCHEMAID	Person
+cat=hate,dislike:type	numeric:length
+En1	N1	N4	|	hate	5
+En2	N3	N5	|	dislike	8

@@ -1,0 +1,6 @@
+# Example of a file specified by the first, non-comment or empty line
+DIRECTED
+p4,p2
+p4,p1
+p4,p3
+p4,p4

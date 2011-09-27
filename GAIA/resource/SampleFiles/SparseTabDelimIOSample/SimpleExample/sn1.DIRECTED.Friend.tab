@@ -1,0 +1,8 @@
+DIRECTED	Friend
+cat=work,college,club:type
+Fr1	Person:N1	|	Person:N2	|	type=work:P=1.0,0.0,0.0
+Fr5	Person:N3	|	Person:N2	|	type=work:P=1.0,0.0,0.0
+Fr2	Person:N3	Person:N1	|	Person:N5	Person:N4	|	type=work:P=1.0,0.0,0.0
+Fr6	Person:N3	Person:N5	|	Person:N4	|	type=work:P=1.0,0.0,0.0
+Fr4	Person:N1	|	Person:N5	|	type=work:P=1.0,0.0,0.0
+Fr3	Person:N2	|	Person:N3	Person:N4	|	type=work:P=1.0,0.0,0.0

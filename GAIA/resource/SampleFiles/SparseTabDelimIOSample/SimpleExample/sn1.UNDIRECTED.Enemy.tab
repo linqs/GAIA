@@ -1,0 +1,4 @@
+UNDIRECTED	Enemy
+cat=hate,dislike:type	numeric:length
+En2	Person:N3	Person:N5	|	type=dislike:P=0.0,1.0	length=8.0
+En1	Person:N4	Person:N1	|	type=hate:P=1.0,0.0	length=5.0

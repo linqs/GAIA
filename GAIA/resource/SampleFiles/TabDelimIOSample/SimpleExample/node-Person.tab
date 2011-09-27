@@ -1,0 +1,7 @@
+NODE	Person
+string:name	numeric:age	cat=blue,black:eyecolor:black	multicat=camry,accord,tundra:car	string:state	multiid:family:SocialNetwork.sn1.Person.N1
+N1	Mark	20	black	camry,accord	Virginia	?
+N2	Mike	53	blue:P=.9,.1	accord	Maryland	?
+N3	Anna	35	blue	tundra	Washington	?
+N4	Mary	12	black	camry	Ohio	?
+N5	Will	90	black	?	Florida	SocialNetwork.sn1.Person.N3,SocialNetwork.sn1.Person.N4

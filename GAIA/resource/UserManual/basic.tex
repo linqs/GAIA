@@ -1,0 +1,172 @@
+
+\chapter{Basic User Guide}
+\label{basicuser}
+In this chapter, we will talk about how to use GAIA as a tool.  GAIA was designed so
+users could run basic experiments without having to write code.  Instead,
+the user can use one of the Experiment classes which was created to do most
+of the common machine learning tasks.  As input, a configuration file is passed
+which contains the different parameters required for the experiment and algorithms
+the user wishes to test.
+
+In this chapter, we begin by providing some basic terminology and concepts used
+throughout GAIA in \secref{basicdefs}.  We then go through an example experiment
+in \secref{basicexample}.
+
+\section{Basic Definitions}
+\label{basicdefs}
+\subsection{Graph}
+A Graph is the primary object in GAIA on which the different modules of GAIA
+perform over.  GAIA is set up such that multiple Graphs can be instantiated
+at any time using any available implementation of the Graph interface.
+Now, within each graph, there are objects known as Graph Items.
+A Graph Item is a general term to describe all the objects within the graph itself
+namely, the nodes and edges in the graph.  The GAIA Graph interface
+allows for heterogenous graphs with many different kinds of nodes
+and edges (see \secref{decorable}).  Furthermore, it allows for both
+undirected and directed edge types, as well as hyperedges.  This means
+that undirected edges can consist of one or more connected nodes and
+directed edges can consist of one or more source nodes and one or more
+target nodes.  Implementations of graphs and input formats vary though so
+make sure to look at them prior to using.
+
+\subsection{Decorable}
+\label{decorable}
+Any object in GAIA which can hold attributes are considered Decorable.
+The Decorable objects in GAIA include all Graphs, Nodes, and Edges.
+Each Decorable object has a corresponding schema ID and schema
+which specifies what features and what type each feature is.
+For example, a Node might have the schema ID of ``person'' which
+corresponds to a schema that includes the features numeric feature ``age,''
+a categorical feature (``male'' or ``female'') ``gender,'' and string value ``name.''
+Similarly, a directed edge may have a of schema ID ``friendof''
+which corresponds to a schema which contains a numeric feature ``friendshipstrength.''
+
+Aside from the schema ID, all Decorable items also hold an ID which
+is unique for each object.  Graphs are unique given a string identifier, we call
+the object ID, and its schema ID.  For example, two graphs can be
+a graph with the object ID of ``myspace'' and schema ``socialnetwork''
+and another can be a graph with object ID ``facebook'' with schema ``socialnetwork''.
+Similarly, Graph Items (nodes and edges) are
+unique given the ID of the graph it belongs to, the object's schema ID,
+and a string value representing an identifier for the object.  For Graph Items, the object
+identifier needs to only be unique for a given graph and schema pair.  For example,
+an object id of ``eagle'' can be used for both a node of schema ``animal,''
+as well as a node of schema ``sports-team'' in a given graph.  Likewise,
+two nodes with object id ``eagle'' with schema ``animal'' is valid and can exist
+as long as they are in two different graphs.
+
+\subsection{Feature}
+\label{feature}
+Decorable items can hold features.  There are two classes of features,
+Explicit and Derived.  Explicit features are features whose values
+are explicitly set.  For example, a feature like "name" for a person
+is set to ``John'' and ``Anna.'' On the other hand, Derived features are features
+whose values are not set but are instead derived from other features
+or the graph itself.  For example, a feature called ``degree'' for nodes
+may not be set, and instead is calculated for a node by counting
+how many edges the node is connected to.
+
+Aside from the two major classes of features, there are also many
+different types of features corresponding to the type of value the
+feature can hold.  These include string, numeric, categorical,
+multiple categorical, and multi valued.
+See Java documentation in linqs.gaia.feature for more details.
+
+A major feature of GAIA is the ability to created custom derived features using
+a declarative language.  Although many simple features may have direct
+implementation available (see linqs.gaia.feature.derived), some domains
+may need more customized derived features.  By using the the
+feature construction feature of GAIA, these features can be created by
+specifying a feature template (a text file defining how the feature should be computed)
+and specifying a feature construction file (a text file specifying what features to add in
+what feature schema).  For this chapter, we will demonstrate this capability using
+one of the predefined derived features.  To create custom features using
+the declarative language, go to \chapref{featureconstruction}.
+
+\subsection{Configurable}
+\label{configurable}
+Configurable items in GAIA are items which you can load and save
+parameters to.  Configurable items include models, experiments,
+statistics, and derived features.  Because these items implement
+the configurable interface, users can specify an arbitrary number of 
+parameters that maybe needed for each implementation.  For example,
+an model involving object classification will need a parameter to define
+which feature to predict.  Similarly, an experiment may need you to
+specify which statistics you want to calculate over the predictions
+(e.g., accuracy, confusion matrix, f-measure).
+
+Parameters are stored as key-value pairs.  The key is of type string
+and the value can be either a string or a number.  Parameters
+can be set in the code by calling setParameter, or more commonly,
+via a configuration file.
+
+See Java documentation for linqs.gaia.configurable for formatting
+and further details.
+
+\subsection{Logging}
+\label{logging}
+There are many different logging levels defined in GAIA for printing output.
+This is used as an alternative to printing straight to the system output.
+This allows users to turn certain messages on and off, depending the situation.
+Supported logging levels include four major types INFO, MINOR, DEBUG, and DEV.
+INFO messages are messages which are always printed by default.  When running experiments,
+this may include messages that print what the values for the requested statistics
+are.  MINOR messages are also always printed by default.  They print out
+situations in the code which may not be what the user intended.  One example for
+a MINOR message is that when using certain IO formats, a warning message
+is printed whenever you try to load an edge in which one of the nodes
+specified are not defined in the graph.  This may be desired in some situations,
+i.e., you only want to load a part of the whole graph, but in case it isn't,
+a warning will let you know what is occurring without necessarily halting
+the execution by throwing an exception.  The next level of logging is DEBUG.
+DEBUG is not printed by default and should only be turned on when trying to understand what is going
+on with the code.  This maybe so you can keep track of what part of the
+code you're currently in, or to print out messages from different parts of the code
+for use in debugging unexpected problems.  In IO classes, for example,
+you may want to print which file you are currently loading so that if you're having
+problems loading the files, you can look directly at the file which is causing the error.
+Finally, the last level of logging is DEV.  DEV is like DEBUG but is only intended
+for use in development.  If you see a DEV message being printed in released code,
+notify the GAIA developers immediately.
+
+\subsection{Experiment}
+\label{experiment}
+When choosing to use GAIA as a tool, you can use one of the predefined
+Experiment implementations.  Each implementation is defined to run
+a specific type of experiment.  Many of the most common experiments
+are defined in GAIA.  To run the experiment, all you need specify is a configuration
+file (which contains all the parameters used by all Configurable items defined in the experiment,
+as the command line arguments.   An example of this is show in \secref{basicexample}.
+
+You can identify which type experiment you want to run by looking at the
+Javadocs for the defined experiment implementations given under linqs.gaia.experiment.
+
+
+\section{Example}
+\label{basicexample}
+
+\subsection{Object Classification}
+In this section, we give an example of running an object classification experiment using GAIA.
+For this example, you will need to download the following:
+
+\begin{enumerate}
+\item The sample experiment configuration and data files.  You can download and unzip these files from
+http://linqs.cs.umd.edu/trac/gaia/wiki/ocexperiment.tgz (if you downloaded the source code
+for GAIA, the same configuration files are also available from resource/SampleFiles/OCExperimentSample)
+\item The GAIA library (gaia.jar) from http://linqs.cs.umd.edu/trac.
+\end{enumerate}
+
+Place all the contents of the zip file and the jar files in the same directory.
+To run an experiment, you can now just run the command:
+
+./runExp.sh
+
+What should be printed out now are log messages indicating the progress
+and eventual results, including statistics, of running an object classification
+algorithm with GAIA over the WebKB dataset.  We now look closer into
+exactly what occurred and how.
+
+Looking at ./runExp.sh, we see that it is a bash shell script which just
+executes the command:
+
+java -classpath=./gaia.jar linqs.gaia.experiment.OCExperiment experiment.cfg.

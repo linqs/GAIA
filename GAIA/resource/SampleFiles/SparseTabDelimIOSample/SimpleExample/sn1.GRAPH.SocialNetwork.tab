@@ -1,0 +1,3 @@
+GRAPH	SocialNetwork
+string:creator	string:type
+sn1	creator=namatag	type=people

@@ -1,0 +1,7 @@
+NODE	Person
+string:name	numeric:age	cat=blue,black:eyecolor:black	multicat=camry,accord,tundra:car	string:state	multiid:family:SocialNetwork.sn1.Person.N1
+N4	name=Mary	age=12.0	car=camry:P=1.0,0.0,0.0	state=Ohio
+N2	name=Mike	age=53.0	eyecolor=blue:P=0.9,0.1	car=accord:P=0.0,1.0,0.0	state=Maryland
+N3	name=Anna	age=35.0	eyecolor=blue:P=1.0,0.0	car=tundra:P=0.0,0.0,1.0	state=Washington
+N1	name=Mark	age=20.0	car=accord,camry:P=0.0,0.0,0.0	state=Virginia
+N5	name=Will	age=90.0	state=Florida	family=SocialNetwork.sn1.Person.N3,SocialNetwork.sn1.Person.N4

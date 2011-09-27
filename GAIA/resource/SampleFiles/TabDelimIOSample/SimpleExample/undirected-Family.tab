@@ -1,0 +1,9 @@
+UNDIRECTED	Family
+cat=cousin,sister,brother,none:type	numeric:length
+Fam1	Person:N1	Person:N2	|	?	?
+Fam2	Person:N1	Person:N3	|	cousin	5
+Fam3	Person:N1	Person:N4	|	sister	1
+Fam4	Person:N2	Person:N3	|	?	3
+Fam5	Person:N2	Person:N4	|	brother	?
+# The next line is a sample of an undirected hyperedge with one node
+Fam6	Person:N4	|	cousin	100

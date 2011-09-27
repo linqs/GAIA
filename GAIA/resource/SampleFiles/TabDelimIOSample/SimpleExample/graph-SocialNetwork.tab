@@ -1,0 +1,4 @@
+#Example TabDelimIO Graph file
+GRAPH	SocialNetwork
+string:creator	string:type
+sn1	namatag	people
