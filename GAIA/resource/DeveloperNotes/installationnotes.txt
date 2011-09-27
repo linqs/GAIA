@@ -1,3 +1,0 @@
-This document contains information on how to check out and use GAIA.
-
-Java:  GAIA is currently under development using Java 1.5.
