@@ -62,6 +62,10 @@ import edu.uci.ics.jung.graph.util.Pair;
  * only edges with the given schema ID will be exported.
  * <LI> asundirected-If "yes", export all edges as undirected regardless
  * of actual edge type.  Default is "no".
+ * <LI> unique-If "yes", export all edges as unique (an edge is not created
+ * in the jung graph between a pair of nodes if another edge,
+ * of the same schema id, was previously added between them).
+ * Default is "no".
  * </UL>
  * 
  * <LI> For importing graph:
@@ -89,6 +93,7 @@ public class JungConverter extends BaseConfigurable
 	 */
 	public edu.uci.ics.jung.graph.Graph<Object,Object> exportGraph(Graph g) {
 		boolean asundirected = this.getYesNoParameter("asundirected","no");
+		boolean unique = this.getYesNoParameter("unique","no");
 		
 		Set<String> nodesids = null;
 		if(this.hasParameter("exportnodesids")) {
@@ -119,6 +124,7 @@ public class JungConverter extends BaseConfigurable
 		}
 		
 		// Add edges to jung graph
+		Set<String> processed = unique ? new HashSet<String>() : null;
 		Iterator<Edge> eitr = g.getEdges();
 		while(eitr.hasNext()) {
 			Edge e = eitr.next();
@@ -137,17 +143,44 @@ public class JungConverter extends BaseConfigurable
 				nitr = e.getAllNodes();
 				Node n1 = nitr.next();
 				Node n2 = nitr.next();
+				
+				if(unique) {
+					String key1 = n1.getID().toString()+"-"+e.getSchemaID()+"-"+n2.getID().toString();
+					if(processed.contains(key1)) {
+						continue;
+					} else {
+						processed.add(key1);
+						String key2 = n2.getID().toString()+"-"+e.getSchemaID()+"-"+n1.getID().toString();
+						processed.add(key2);
+					}
+				}
+				
 				jungg.addEdge(e.getID().toString(), n1.getID().toString(),
 						n2.getID().toString(), EdgeType.UNDIRECTED);
 			} else if(e instanceof DirectedEdge) {
 				Node source = ((DirectedEdge) e).getSourceNodes().next();
 				Node target = ((DirectedEdge) e).getTargetNodes().next();
+				
+				if(unique) {
+					String key1 = source.getID().toString()+"-"+e.getSchemaID()+"-"+target.getID().toString();
+					if(processed.contains(key1)) {
+						continue;
+					} else {
+						processed.add(key1);
+					}
+				}
+				
 				jungg.addEdge(e.getID().toString(), source.getID().toString(),
 						target.getID().toString(), EdgeType.DIRECTED);
 			} else {
 				throw new UnsupportedTypeException("Unsupported edge type: "
 						+e.getClass().getCanonicalName());
 			}
+		}
+		
+		if(Log.SHOWDEBUG) {
+			Log.DEBUG("Exported JUNG Graph: Number of nodes="+jungg.getVertexCount()
+					+" Number of Edges: "+jungg.getEdgeCount());
 		}
 		
 		return jungg;
