@@ -36,33 +36,130 @@ import linqs.gaia.feature.values.FeatureValue;
 import linqs.gaia.feature.values.MultiCategValue;
 import linqs.gaia.feature.values.UnknownValue;
 import linqs.gaia.util.ArrayUtils;
+import linqs.gaia.util.Dynamic;
 import linqs.gaia.util.SimplePair;
 import linqs.gaia.util.UnmodifiableList;
 
 /**
  * A tab delimited format designed for dealing with sparse
- * data.  The format is the same as that of TabDelimIO
+ * data.  The format is the same as that of {@link TabDelimIO}
  * with the exception of how and what feature values are saved.
- * The feature value includes the name of the features and is of the form:
- * <p>
- * &lt;featurevalue&gt; := &lt;featurename&gt;=&lt;value&gt;[:P=<probability>]
- * <p>
- * Also, unlike TabDelimIO, SparseTabDelimIO does not save
+ * Unlike {@link TabDelimIO}, {@link SparseTabDelimIO} does not save
  * the values of features for nodes, edges, or graphs
  * whose value is not known and for closed features whose
  * value is the same as the default value.
  * As a result, this format can save a significant amount of disk
  * space to store the graph, as well as speed up
  * loading and saving for graphs with sparse features.
- * 
- * Required Parameters:
+ * <p>
+ * The data is available in a sparse, tab delimited format.
+ * There is a separate file for each type of node and edge, as well as one for the graph itself.
+ * The basic format for node and graph files is as follows:<br>
+ * [GRAPH|NODE]\t&lt;schemaid<br>
+ * [NO_FEATURES|&lt;featuretype&gt;:&lt;featurename&gt;[:&lt;defaultvalue&gt;][\t&lt;featuretype&gt;:&lt;featurename&gt;[:&lt;defaultvalue&gt;]]*]<br>
+ * &lt;id&gt;\t&lt;values&gt;*<br>
+ * <p>
+ * The first line indicates the type of object defined in this file (i.e., graph, node)
+ * as well as a string which identifies this set of objects (e.g., people nodes, friendship edges).
+ * The second line either contains NO_FEATURES, which indicates that this set of objects
+ * do not have any attributes defined for it, or it contains a tab delimited set of attribute
+ * declarations which specifies the type of the attribute (string,numeric,cat=[&lt;category&gt;][,&lt;category&gt;]*),
+ * the name of the attribute (i.e., age, height, hair color), and, optionally, a default value.
+ * <p>
+ * The subsequent lines each correspond to one object
+ * (for graph files, you have exactly one line which defines
+ * the id and attribute values of the graph itself).
+ * A unique ID is specified for each object in the first column and the subsequent
+ * columns contain a key/value pair (of the form key=value) where key is
+ * the name of an attribute (defined in the second line) and
+ * the value is a string representation of the attribute value of that attribute
+ * for the object described by that line.
+ * <p>
+ * Example:<br>
+ * NODE person<br>
+ * string:name	numeric:age	cat=undergrad,grad:type:undergrad<br>
+ * s1	name=Bob	age=22	type=grad<br>
+ * s2	name=Ann	age=34<br>
+ * <p>
+ * [DIRECTED|UNDIRECTED]\t&lt;schemaid<br>
+ * [NO_FEATURES|&lt;featuretype&gt;:&lt;featurename&gt;[:&lt;defaultvalue&gt;][\t&lt;featuretype&gt;:&lt;featurename&gt;[:&lt;defaultvalue&gt;]]*]<br>
+ * &lt;id&gt;\t&lt;values&gt;*<br>
+ * <p>
+ * For edges, after the ID for each edge (directed or undirected),
+ * we have a similar format but where the format for each line referring
+ * to each edge also contains information about the nodes that the edge is incident upon.
+ * For undirected edges, each line has the form:<br>
+ * &lt;id&gt;\t&lt;nodetype&gt;&lt;nodeid&gt;[\t&lt;nodeid&gt;]*\t|\t&lt;values&gt;*<br>
+ * where node type refers to the type id (defined in the first line of each node file)
+ * and nodeid refers to the object id (defined by the first column of a node file)
+ * that the undirected edge is incident to.
+ * <p>
+ * For directed edges, each line has the form:
+ * <p>
+ * &lt;id&gt;\t&lt;sourcenodetype&gt;:&lt;sourcenodeid&gt;[\t&lt;sourcenodetype&gt;:&lt;sourcenodeid&gt;]*\t|\t&lt;targetnodetype&gt;:&lt;targetnodeid&gt;[\t&lt;targetnodetype&gt;:&lt;targetnodeid&gt;]*\t|\t&lt;values&gt;*
+ * <p>
+ * where sourcenodetype and sourcenodeid is the node type and id of a source of this directed edge and targetnodetype and targetnodeid is a target of this directed edge.  Note that this format support hyperedges (undirected edges can have 1 or more nodes and directed edges can have one or more source and one or more target nodes).
+ * <p>
+ * Example:<br>
+ * DIRECTED	Friends<br>
+ * NO_FEATURES<br>
+ * Friendship1	Person:s1	Person:s2<br>
+ * <br>
+ * UNDIRECTED	MemberOf<br>
+ * NO_FEATURES<br>
+ * M1	Person:s1	|	Group:g1<br>
+ * <p>
+ * Required Parameters: (Same as {@link TabDelimIO})
  * <UL>
- * <LI> Same as {@link TabDelimIO}.
+ * <LI> For loading:
+ *      <UL>
+ *      <LI> files-Comma delimited list of the files to use.
+ *      Files must be listed in order Graph file, Node files and Edge files.
+ *      This parameter is used over filedirectory if both are specified.
+ *      Not required if filedir is specified.
+ *      <LI> filedirectory-Directory of files to load.
+ *      The input will try to load
+ *      all files in the directory and will throw a warning
+ *      for files it cannot load.
+ *      Not required if files is specified or if using
+ *      {@link DirectoryBasedIO} methods.
+ * </UL>
+ * <LI> For saving:
+ *      <UL>
+ *      <LI> filedirectory-Directory to store all the resulting files
+ *      </UL>
  * </UL>
  * 
- * Optional Parameters:
+ * Optional Parameters: (Same as {@link TabDelimIO})
  * <UL>
- * <LI> Same as {@link TabDelimIO}.
+ * <LI> For loading:
+ *       <UL>
+ *       <LI> graphclass-Full java class for the graph,
+ *       instantiated using {@link Dynamic#forConfigurableName}.
+ *       Default is {@link linqs.gaia.graph.datagraph.DataGraph}.
+ *       <LI> loadfids-Comma delimited list of feature ids.  If set,
+ *       load only the feature values for the specified feature ids.
+ *       This will save both time and memory for loading graphs
+ *       with large numbers of features.
+ *       <LI> fileprefix-Prefix the files must have to be loaded, specifically
+ *       when using the filedirectory option.  Default is to load all specified
+ *       files.
+ *      <LI> graphobjid-If specifided, the following object id will
+ *       used in place of the graphs object ID when loading.
+ *       This ID is ignored when loading with a specified graph object id.
+ *       </UL>
+ * <LI> For saving:
+ *       <UL>
+ *       <LI> fileprefix-Prefix to use in naming the resulting files.  Default
+ *       is to use the object id of the graph.
+ *       <LI> savesids-Comma delimited list of feature schema IDs.
+ *       If specified, during saving, only the graph items with the specified
+ *       schema ID will be saved
+ *       <LI> savederived-If yes, save the values of derived features.  If no,
+ *       do not save the value of derived features.  Default is no.
+ *       <LI> graphobjid-If specifided, the following object id will
+ *       used in place of the graphs object ID when saving.
+ *       </UL>
  * </UL>
  * 
  * @see linqs.gaia.graph.io.TabDelimIO

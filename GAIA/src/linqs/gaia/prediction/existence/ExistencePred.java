@@ -196,7 +196,7 @@ public class ExistencePred implements SingleValue, Probability, Weighted {
 	 * {@link ExistencePredGroup#addNegativePrediction(ExistencePred)})
 	 * is used.
 	 * 
-	 * @param predvalue
+	 * @param probs Probability distribution
 	 */
 	protected void setProbs(double[] probs) {
 		this.probs = probs;

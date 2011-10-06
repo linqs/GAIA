@@ -70,6 +70,14 @@ import linqs.gaia.util.ListUtils;
  *          <LI>samplerclass-Sampler class (see {@link DecorableSampler}), instantiated using {@link Dynamic#forConfigurableName},
  *          to use for the sampler when doing in network evaluation.
  *          </UL>
+ *     <LI>insplitnetwork-Run in network evaluation using a sampler where, based on the sampling,
+ *        the network is split into two disjoint networks, one for training and the other for testing.
+ *          <UL>
+ *          <LI>ioclass-Required for innetwork. {@link IO} class, instantiated using {@link Dynamic#forConfigurableName},
+ *          to use in loading the graph
+ *          <LI>samplerclass-Sampler class (see {@link DecorableSampler}), instantiated using {@link Dynamic#forConfigurableName},
+ *          to use for the sampler when doing in network evaluation.
+ *          </UL>
  *     <LI>acrossnetwork-Run across network evaluation
  *          <UL>
  *          <LI>trainioclass-Required for across network. {@link IO} class, instantiated using {@link Dynamic#forConfigurableName},
@@ -87,7 +95,7 @@ import linqs.gaia.util.ListUtils;
  * <LI>classifierclass-{@link Classifier} class, instantiated using {@link Dynamic#forConfigurableName}, to use in classifying objects.
  * Default is {@link linqs.gaia.model.oc.ncc.SimpleBaselineClassifier}.
  * <LI>statistics-Comma delimited list of statistics (see {@link Statistic}), instantiated using {@link Dynamic#forConfigurableName},
- * to compute per split.
+ * to compute per split.  Statistics used must be able to handle {@link CategValuePredGroup} predictions.
  * Default is {@link linqs.gaia.prediction.statistic.ConfusionMatrix} and {@link linqs.gaia.prediction.statistic.Accuracy}.
  * <LI>savemodelfile-Directory to save the learned model to
  * <LI>loadmodelfile-Do not learn a model.  Load from the given train file.

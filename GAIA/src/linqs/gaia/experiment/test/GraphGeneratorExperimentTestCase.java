@@ -16,24 +16,28 @@
 */
 package linqs.gaia.experiment.test;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import junit.framework.TestCase;
+import linqs.gaia.experiment.Experiment;
+import linqs.gaia.experiment.GraphGeneratorExperiment;
 
-public class ExperimentTestSuite {
-
-	public static Test suite() {
-		TestSuite suite = new TestSuite();
-
-		// Test each experiment class
-		suite.addTestSuite(OCExperimentTestCase.class);
-		suite.addTestSuite(GraphAnalysisExperimentTestCase.class);
-		suite.addTestSuite(GraphVisualizationExperimentTestCase.class);
-		suite.addTestSuite(GraphGeneratorExperimentTestCase.class);
+public class GraphGeneratorExperimentTestCase extends TestCase {
+	public GraphGeneratorExperimentTestCase() {
 		
-		return suite;
+	}
+	
+	protected void setUp() {
+		
 	}
 
-	public static void main(String[] args) {
-		junit.textui.TestRunner.run(suite());
+	protected void tearDown() {
+		
+	}
+	
+	public void testExperiment() {
+		Experiment e = new GraphGeneratorExperiment();
+		e.loadParametersFile("resource/SampleFiles/GraphGeneratorExperimentSample/experiment.cfg");
+		e.runExperiment();
+		
+		assertNotNull(e);
 	}
 }

@@ -39,7 +39,7 @@ import linqs.gaia.similarity.NormalizedListSimilarity;
  * If specified, a match is only counted if the string representation
  * of both objects are the same as the sparse value.  If the object being
  * compared is a {@link FeatureValue}, the value returned by {@link FeatureValue#getStringValue()}
- * instead of the {@link FeatureValue#toString()} value.
+ * instead of the {@link Object#toString()} value.
  * </UL>
  * @author namatag
  *

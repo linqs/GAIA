@@ -293,7 +293,7 @@ public interface Node extends GraphItem {
 	 * Return the size of the unique set nodes which are a source of a directed
 	 * edge of the specified schema where this node is a target of that edge.
 	 * 
-	 * @param schemaID schema ID of the edge
+	 * @param edgeschemaID schema ID of the edge
 	 * @return Size of source set
 	 */
 	int numAdjacentSources(String edgeschemaID);

@@ -384,7 +384,7 @@ public interface Graph extends Decorable, Identifiable<GraphID>,
 	 * Returns <code>true</code> if this graph has a GraphItem with the
 	 * with the same schema and object id.
 	 *
-	 * @param gi Graph Item to check the existence of an equivalent graph item for
+	 * @param id Graph Item ID to check the existence of an equivalent graph item for
 	 * @return <code>true</code> if some GraphItem in the graph has the
 	 * specified ID, and <code>false</code> otherwise.
 	 */

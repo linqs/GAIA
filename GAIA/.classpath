@@ -12,7 +12,6 @@
 	<classpathentry kind="lib" path="lib/jama-1.0.2/Jama-1.0.2.jar"/>
 	<classpathentry kind="lib" path="lib/jung-2beta1/jung-graph-impl-2.0-beta1.jar"/>
 	<classpathentry kind="lib" path="lib/jung-2beta1/jung-algorithms-2.0-beta1.jar"/>
-	<classpathentry kind="lib" path="lib/colt-1.2.0/colt.jar"/>
 	<classpathentry kind="lib" path="lib/groovy-1.7.1/groovy-all-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.4/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/libsvm-3.0/libsvm.jar"/>
