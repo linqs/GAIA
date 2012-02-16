@@ -45,7 +45,9 @@ public class DGUndirected extends DGEdge implements UndirectedEdge {
 
 	@Override
 	protected synchronized void nodeRemovedNotification(Node n) {
-		this.removeNode(n);
+		// Note: Assumes edge validity checking is being done
+		// in the node removal function.
+		this.undirected.remove(n);
 	}
 
 	@Override

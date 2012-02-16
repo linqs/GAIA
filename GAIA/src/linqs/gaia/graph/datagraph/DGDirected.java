@@ -49,7 +49,23 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 
 	@Override
 	protected synchronized void nodeRemovedNotification(Node n) {
-		this.removeNode(n);
+		// Note: Assumes edge validity checking is being done
+		// in the node removal function.
+		boolean removed = false;
+		if(this.isSource(n)){
+			removed = true;
+			this.sources.remove(n);
+		}
+		
+		if(this.isTarget(n)){
+			removed = true;
+			this.targets.remove(n);
+		}
+		
+		if(!removed){
+			throw new InvalidOperationException("Node is not incident on this edge: "
+					+GraphItemUtils.getNodeIDString(n));
+		}
 	}
 
 	@Override
@@ -174,11 +190,17 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 	public synchronized void removeSourceNode(Node n) {
 		((DGNode) n).edgeRemovedNotification(this);
 		this.sources.remove(n);
+		
+		checkValidity("Removing source node resulted in invalid edge: Removing "
+				+GraphItemUtils.getNodeIDString(n)+" invalidated "+this);
 	}
 
 	public synchronized void removeTargetNode(Node n) {
 		((DGNode) n).edgeRemovedNotification(this);
 		this.targets.remove(n);
+		
+		checkValidity("Removing target node resulted in invalid edge: Removing "
+				+GraphItemUtils.getNodeIDString(n)+" invalidated "+this);
 	}
 
 	public Iterator<Node> getAllNodes() {
