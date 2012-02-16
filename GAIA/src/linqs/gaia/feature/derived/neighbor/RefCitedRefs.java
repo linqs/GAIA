@@ -47,14 +47,11 @@ import linqs.gaia.util.IteratorUtils;
 public class RefCitedRefs extends Neighbor {
 	private static final long serialVersionUID = 1L;
 	
-	private boolean initialize = true;
 	private String referstosid = null;
 	private String refedgesid = null;
 	private int dirtype = 3;
 	
-	private void initialize() {
-		initialize = false;
-		
+	protected void initialize() {
 		referstosid = this.getStringParameter("referstosid");
 		refedgesid = this.getStringParameter("refedgesid");
 		
@@ -73,10 +70,6 @@ public class RefCitedRefs extends Neighbor {
 	
 	@Override
 	protected Iterable<GraphItem> calcNeighbors(GraphItem gi) {
-		if(initialize) {
-			this.initialize();
-		}
-		
 		Node entity = (Node) gi;
 		
 		// Add references to entity

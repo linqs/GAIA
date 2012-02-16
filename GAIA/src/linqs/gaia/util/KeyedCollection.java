@@ -18,13 +18,13 @@ package linqs.gaia.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.exception.InvalidOperationException;
 
@@ -42,7 +42,7 @@ public abstract class KeyedCollection<C extends Collection<V>,K,V> {
 	protected abstract C createCollection();
 	
 	public KeyedCollection() {
-		keyedcollections = new HashMap<K,C>();
+		keyedcollections = new ConcurrentHashMap<K,C>();
 	}
 	
 	/**
@@ -51,7 +51,7 @@ public abstract class KeyedCollection<C extends Collection<V>,K,V> {
 	 * @param key Key of the collection the object should be added to
 	 * @param value Value you want added to the specified collection
 	 */
-	public void addItem(K key, V value){
+	public synchronized void addItem(K key, V value){
 		C currcollection = null;
 		
 		if(keyedcollections.containsKey(key)){
@@ -83,7 +83,7 @@ public abstract class KeyedCollection<C extends Collection<V>,K,V> {
 	 * @param value Value you want removed from the specified collection
 	 * @return <tt>true</tt> if this collection changed as a result of the call
 	 */
-	public boolean removeItem(K key, V value){
+	public synchronized boolean removeItem(K key, V value){
 		C currcollection = null;
 		
 		if(keyedcollections.containsKey(key)){
@@ -172,14 +172,14 @@ public abstract class KeyedCollection<C extends Collection<V>,K,V> {
 	 * @return previous value associated with specified key, or <tt>null</tt>
      *	       if there was no mapping for key.
 	 */
-	public C remove(K key) {
+	public synchronized C remove(K key) {
 		return this.keyedcollections.remove(key);
 	}
 	
 	/**
 	 * Remove all collections
 	 */
-	public void removeAll() {
+	public synchronized void removeAll() {
 		this.keyedcollections.clear();
 	}
 	

@@ -92,9 +92,7 @@ public class NeighborValueMode extends DerivedCateg implements
 
 	@Override
 	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(cats==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		KeyedCount<String> count = this.getCount(di);
 		List<String> highest = count.highestCountKeys();
@@ -124,9 +122,7 @@ public class NeighborValueMode extends DerivedCateg implements
 	}
 
 	public UnmodifiableList<String> getAllCategories() {
-		if(cats==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		return cats;
 	}
@@ -137,9 +133,7 @@ public class NeighborValueMode extends DerivedCateg implements
 	 * @param neighbor Neighbor class to use
 	 */
 	public void setNeighbor(Neighbor neighbor) {
-		if(cats==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		this.neighbor = neighbor;
 	}

@@ -72,4 +72,11 @@ public interface VBClassifier extends Classifier {
 	 * @return Predicted value
 	 */
 	public FeatureValue predict(Decorable testitem);
+	
+	/**
+	 * Return a copy of the model.
+	 * 
+	 * @return Copy of model
+	 */
+	public VBClassifier copyModel();
 }

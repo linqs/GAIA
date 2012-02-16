@@ -135,7 +135,7 @@ public class ERUtils {
 	}
 	
 	/**
-	 * Create entity nodes for all references.
+	 * Create entity nodes for all references and remove the co-referent edges.
 	 * A "refers-to" directed edge is added from each reference node
 	 * to the corresponding entity node.
 	 * 
@@ -527,6 +527,25 @@ public class ERUtils {
 				refs.add(itr.next());
 			}
 		}
+		
+		return refs;
+	}
+	
+	/**
+	 * Gets the references which are co-referent to the given node (excluding itself).
+	 * Uses the existence of incoming "refer-to" edges
+	 * from the references to some entity.
+	 * If the reference has no "refers-to" edges,
+	 * it was not an ambiguous entity and empty set is returned.
+	 * 
+	 * @param n Entity node
+	 * @param referstosid Schema ID of refers-to edge.  If null, just return n.
+	 * @return Set of reference nodes
+	 */
+	public static Set<Node> getRefersToCoReferences(Node n, String referstosid) {
+		Node entity = getRefersToEntity(n, referstosid);
+		Set<Node> refs = getRefersToReferences(entity, referstosid);
+		refs.remove(n);
 		
 		return refs;
 	}

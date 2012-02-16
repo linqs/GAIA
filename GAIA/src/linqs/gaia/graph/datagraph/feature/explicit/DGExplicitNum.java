@@ -16,7 +16,7 @@
 */
 package linqs.gaia.graph.datagraph.feature.explicit;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.exception.InvalidAssignmentException;
 import linqs.gaia.feature.ExplicitFeature;
@@ -28,10 +28,10 @@ import linqs.gaia.feature.values.NumValue;
 
 public class DGExplicitNum extends ExplicitNum implements NumFeature, DGExplicitFeature {
 	private ExplicitNum en = null;
-	private HashMap<Integer,Double> id2value;
+	private ConcurrentHashMap<Integer,Double> id2value;
 	
 	public DGExplicitNum(ExplicitNum en) {
-		this.id2value = new HashMap<Integer,Double>();
+		this.id2value = new ConcurrentHashMap<Integer,Double>();
 		this.en = en;
 	}
 	

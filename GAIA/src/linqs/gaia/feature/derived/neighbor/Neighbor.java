@@ -17,7 +17,8 @@
 package linqs.gaia.feature.derived.neighbor;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.graph.GraphItem;
@@ -34,9 +35,10 @@ import linqs.gaia.util.IteratorUtils;
 public abstract class Neighbor extends BaseConfigurable implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
+	private boolean initialize = true;
 	protected boolean isCaching = false;
-	protected HashMap<GraphItem,Iterable<GraphItem>> depcache
-			= new HashMap<GraphItem,Iterable<GraphItem>>();
+	protected Map<GraphItem,Iterable<GraphItem>> depcache
+			= new ConcurrentHashMap<GraphItem,Iterable<GraphItem>>();
 	
 	/**
 	 * For a given GraphItem, return the collection of GraphItems for use
@@ -46,6 +48,8 @@ public abstract class Neighbor extends BaseConfigurable implements Serializable 
 	 * @return Collection of the neighboring GraphItems of the specified GraphItem
 	 */
 	public Iterable<GraphItem> getNeighbors(GraphItem gi) {
+		initializeNeighbor();
+		
 		if(this.isCaching() && this.depcache.containsKey(gi)){
 			return this.depcache.get(gi);
 		}
@@ -113,10 +117,40 @@ public abstract class Neighbor extends BaseConfigurable implements Serializable 
 	}
 	
 	/**
+	 * Initialize the Neighbor object using the
+	 * {@link #initialize()} method.
+	 * If you need to initialize for a specific method in your neighbor object,
+	 * use this, instead of {@link #initialize()},
+	 * to ensure initialization is thread safe.
+	 * 
+	 */
+	protected void initializeNeighbor() {
+		// Return quickly, if initialization definitely done
+		if(!initialize) {
+			return;
+		}
+		
+		// Ensure that it is only initialized once
+		synchronized(this) {
+			if(initialize) {
+				this.initialize();
+				initialize = false;
+			}
+		}
+	}
+	
+	/**
 	 * Calculate dependency for the Graph Item.
 	 * 
 	 * @param gi Graph Item to get dependencies for
 	 * @return Set of dependencies
 	 */
 	protected abstract Iterable<GraphItem> calcNeighbors(GraphItem gi);
+	
+	/**
+	 * Protected function to initialize any parameters of the neighbor object.
+	 * If you need to initialize for a specific method in your neighbor object,
+	 * use {@link #initializeNeighbor()} to ensure initialization is thread safe.
+	 */
+	abstract protected void initialize();
 }

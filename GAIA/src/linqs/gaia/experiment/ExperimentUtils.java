@@ -19,7 +19,9 @@ package linqs.gaia.experiment;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.Iterator;
+import java.util.regex.Matcher;
 
+import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.configurable.Configurable;
 import linqs.gaia.exception.ConfigurationException;
 import linqs.gaia.exception.InvalidStateException;
@@ -80,6 +82,13 @@ public class ExperimentUtils {
 	 * to instantiate using in {@link Dynamic#forConfigurableName}
 	 * <LI> &lt;schematype&gt; is the type of schema (NODE, DIRECTED, or UNDIRECTED) to add to graph
 	 * </UL>
+	 * <p>
+	 * Note: Environment variables can be referred to in any part of the string in each
+	 * line using the format ${ENVVARNAME} where ENVVARNAME is the name of the variable.
+	 * (e.g., If "REMOVE_FEATURE ${nodeid}" is encountered and the environment nodeid=paper
+	 * then this is equivalent to "REMOVE_FEATURE paper".)
+	 * All substrings which match this pattern is replaced with the defined
+	 * environment variable value for that given variable name prior to processing.
 	 * 
 	 * @see linqs.gaia.util.Dynamic#forConfigurableName(Class, String)
 	 * 
@@ -93,6 +102,8 @@ public class ExperimentUtils {
 			BufferedReader br = new BufferedReader(new FileReader(fcfile));
 			String line = ExperimentUtils.getNonCommentLine(br);
 			while(line != null) {
+				line = processEnvironmentVariables(line);
+				
 				String[] parts = line.split("\\s+");
 				if(parts[0].equals("ADD_FEATURE")) {
 					DerivedFeature df = null;
@@ -249,5 +260,28 @@ public class ExperimentUtils {
 		}
 
 		return line;
+	}
+	
+	public static String processEnvironmentVariables(String value) {
+		// Update environment variables in value
+		String newvalue = value;
+		Matcher matcher = BaseConfigurable.envpattern.matcher(value);
+        while (matcher.find()) {
+        	String group = matcher.group();
+        	int start = matcher.start();
+        	int end = matcher.end();
+        	
+        	String replacement = group.substring(2, group.length()-1);
+        	replacement = System.getenv(replacement);
+        	if(replacement==null){
+				throw new ConfigurationException("No environment variable is defined for "
+						+replacement+" in "+value);
+			}
+        	
+        	newvalue = newvalue.substring(0, start)+replacement+newvalue.substring(end);
+        	matcher = BaseConfigurable.envpattern.matcher(newvalue);
+        }
+        
+        return newvalue;
 	}
 }

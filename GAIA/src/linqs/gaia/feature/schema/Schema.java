@@ -17,12 +17,14 @@
 package linqs.gaia.feature.schema;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import linqs.gaia.exception.InvalidOperationException;
@@ -62,8 +64,8 @@ public class Schema implements Serializable {
 	 */
 	public Schema(SchemaType type) {
 		this.type = type;
-		this.features = new HashMap<String,Feature>();
-		this.fids = new ArrayList<String>();
+		this.features = new ConcurrentHashMap<String,Feature>();
+		this.fids = Collections.synchronizedList(new ArrayList<String>());
 	}
 	
 	/**
@@ -73,7 +75,7 @@ public class Schema implements Serializable {
 	 * @param feature Feature
 	 * @param updatefids If true, add fid to fids.  Otherwise, assume fid is already in fids.
 	 */
-	private void setFeature(String fid, Feature feature, boolean updatefids) {
+	private synchronized void setFeature(String fid, Feature feature, boolean updatefids) {
 		fid = fid.intern();
 		this.features.put(fid,feature);
 		
@@ -99,7 +101,7 @@ public class Schema implements Serializable {
 	 * @param fid Feature id
 	 * @param feature Feature
 	 */
-	public void addFeature(String fid, Feature feature) {
+	public synchronized void addFeature(String fid, Feature feature) {
 		if(fid==null) {
 			throw new InvalidStateException("Attempting to add a null feature id");
 		}
@@ -129,7 +131,7 @@ public class Schema implements Serializable {
 	 * @param fid Feature id
 	 * @param feature Feature
 	 */
-	public void replaceFeature(String fid, Feature feature) {
+	public synchronized void replaceFeature(String fid, Feature feature) {
 		fid = fid.intern();
 		if(!this.hasFeature(fid)){
 			throw new InvalidOperationException("Feature was not previously defined: "+fid);
@@ -170,7 +172,7 @@ public class Schema implements Serializable {
 	/**
 	 * Remove all features from schema
 	 */
-	public void removeAllFeatures(){
+	public synchronized void removeAllFeatures(){
 		Iterator<String> itr = this.getFeatureIDs();
 		while(itr.hasNext()){
 			this.removeFeature(itr.next());
@@ -182,7 +184,7 @@ public class Schema implements Serializable {
 	 * 
 	 * @param fid Feature id
 	 */
-	public void removeFeature(String fid) {
+	public synchronized void removeFeature(String fid) {
 		fid = fid.intern();
 		if(!this.hasFeature(fid)){
 			throw new InvalidOperationException("Cannot remove undefined feature "+fid);
@@ -310,5 +312,33 @@ public class Schema implements Serializable {
 		}
 		
 		return copy;
+	}
+	
+	/**
+	 * Generate a feature id which is not already defined in this schema.
+	 * This feature id can be used in cases where a temporary feature needs to be
+	 * created.  This should not be used whenever a more natural, interpretable
+	 * feature id can be set for a given feature.
+	 * 
+	 * @return Feature ID
+	 */
+	public String generateRandomFeatureID() {
+		Random rand = new Random(System.currentTimeMillis());
+		String fid = "feature-"+rand.nextInt();
+		while(this.hasFeature(fid)) {
+			fid = "feature-"+rand.nextInt();
+		} 
+		
+		return fid;
+	}
+	
+	public static String generateRandomSchemaID(SchemaManager manager) {
+		Random rand = new Random(System.currentTimeMillis());
+		String sid = "schema-"+rand.nextInt();
+		while(manager.hasSchema(sid)) {
+			sid = "schema-"+rand.nextInt();
+		} 
+		
+		return sid;
 	}
 }

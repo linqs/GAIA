@@ -43,13 +43,10 @@ import linqs.gaia.util.Dynamic;
  *
  */
 public class NeighborCount  extends DerivedNum {
-	private boolean initialize = true;
 	private String neighborclass = Adjacent.class.getCanonicalName();
 	private Neighbor neighbor = null;
 	
-	private void initialize() {
-		this.initialize = false;
-		
+	protected void initialize() {
 		// Initialize neighbor information
 		if(this.hasParameter("neighborclass")) {
 			this.neighborclass = this.getStringParameter("neighborclass");
@@ -65,18 +62,12 @@ public class NeighborCount  extends DerivedNum {
 	 * @param neighbor Neighbor class to use
 	 */
 	public void setNeighbor(Neighbor neighbor) {
-		if(initialize) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		this.neighbor = neighbor;
 	}
 	
-	public FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			this.initialize();
-		}
-		
+	public FeatureValue calcFeatureValue(Decorable di) {		
 		if(!(di instanceof GraphItem)) {
 			throw new UnsupportedTypeException("Feature only defined for Graph Items: "
 					+di.getClass().getCanonicalName());

@@ -78,20 +78,25 @@ public class PairwiseSimilarity extends BaseConfigurable implements NormalizedSe
 	NormalizedListSimilarity featuresim = null;
 	
 	private void initialize(Set<? extends Object> item1, Set<? extends Object> item2) {
-		
-		Object o = item1.iterator().next();
-		if(!(o instanceof GraphItem)) {
-			throw new UnsupportedTypeException("Can only get feature values for Graph Items: "+o);
+		synchronized(this) {
+			if(featureids != null) {
+				return;
+			}
+			
+			Object o = item1.iterator().next();
+			if(!(o instanceof GraphItem)) {
+				throw new UnsupportedTypeException("Can only get feature values for Graph Items: "+o);
+			}
+			
+			Schema schema = ((GraphItem) o).getSchema();
+			featureids = FeatureUtils.parseFeatureList(this,
+								schema, FeatureUtils.getFeatureIDs(schema, 2));
+			
+			String featuresimclass = this.getStringParameter("featuresimclass");
+			featuresim = (NormalizedListSimilarity) 
+				Dynamic.forConfigurableName(NormalizedListSimilarity.class, featuresimclass);
+			featuresim.copyParameters(this);
 		}
-		
-		Schema schema = ((GraphItem) o).getSchema();
-		featureids = FeatureUtils.parseFeatureList(this,
-							schema, FeatureUtils.getFeatureIDs(schema, 2));
-		
-		String featuresimclass = this.getStringParameter("featuresimclass");
-		featuresim = (NormalizedListSimilarity) 
-		Dynamic.forConfigurableName(NormalizedListSimilarity.class, featuresimclass);
-		featuresim.copyParameters(this);
 	}
 
 	public double getNormalizedSimilarity(Set<? extends Object> item1,

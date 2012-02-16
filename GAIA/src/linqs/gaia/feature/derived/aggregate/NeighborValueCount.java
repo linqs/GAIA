@@ -83,11 +83,7 @@ public class NeighborValueCount extends DerivedComposite implements GraphDepende
 	
 	private static NumValue numvalue0 = new NumValue(0.0);
 	
-	public FeatureValue calcFeatureValue(Decorable di) {
-		if(features==null) {
-			this.initialize();
-		}
-		
+	public FeatureValue calcFeatureValue(Decorable di) {	
 		// Get counts of features from neighbors
 		KeyedSum<String> count = this.getCount(di, this.weightbyprob);
 		List<FeatureValue> fvalues = new LinkedList<FeatureValue>();
@@ -158,22 +154,19 @@ public class NeighborValueCount extends DerivedComposite implements GraphDepende
 	 * @param neighbor Neighbor class to use
 	 */
 	public void setNeighbor(Neighbor neighbor) {
-		if(features==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		this.neighbor = neighbor;
 	}
 	
 	public UnmodifiableList<SimplePair<String, CVFeature>> getFeatures() {
-		if(features==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		return features;
 	}
 	
-	protected void initialize() {		
+	protected void initialize() {
+		
 		// Initialize neighbor information
 		if(this.hasParameter("neighborclass")) {
 			this.neighborclass = this.getStringParameter("neighborclass");
@@ -217,9 +210,7 @@ public class NeighborValueCount extends DerivedComposite implements GraphDepende
 	}
 	
 	public void cacheNeighbor(boolean iscaching) {
-		if(features==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		this.neighbor.setCache(iscaching);
 	}

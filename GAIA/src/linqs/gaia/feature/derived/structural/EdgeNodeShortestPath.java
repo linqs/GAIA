@@ -56,13 +56,10 @@ import linqs.gaia.util.SimplePair;
  */
 public class EdgeNodeShortestPath extends DerivedNum implements GraphDependent {
 	private Graph g = null;
-	private boolean initialize = true;
 	private Map<ID,Integer> nodeindex = new HashMap<ID,Integer>();
 	private double[][] shortpathlengths = null;
 	
-	private void initialize() {
-		initialize = false;
-		
+	protected void initialize() {
 		AdjacencyMatrix exporter = null;
 		String adjmatrixclass = AdjacencyMatrix.class.getCanonicalName();
 		if(this.hasParameter(adjmatrixclass)) {
@@ -78,11 +75,7 @@ public class EdgeNodeShortestPath extends DerivedNum implements GraphDependent {
 	}
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {		
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only valid for edges: "+
 					di.getClass().getCanonicalName());

@@ -92,4 +92,9 @@ public class GroovyCateg extends DerivedCateg {
 		
 		return df;
 	}
+
+	@Override
+	protected void initialize() {
+		// Do nothing;		
+	}
 }

@@ -29,6 +29,7 @@ import linqs.gaia.prediction.PositiveOnlyGroup;
 import linqs.gaia.prediction.Prediction;
 import linqs.gaia.prediction.PredictionGroup;
 import linqs.gaia.prediction.SingleValue;
+import linqs.gaia.prediction.Weighted;
 
 /**
  * <p>
@@ -38,6 +39,11 @@ import linqs.gaia.prediction.SingleValue;
  * This is different from the accuracy measure defined over binary features
  * (in {@link linqs.gaia.prediction.statistic.SimpleBinaryMeasures SimpleBinaryMeasures})
  * in that the predicted value can be multiclass.
+ * <p>
+ * Required Parameters:
+ * <UL>
+ * <LI> weighted-If "yes", compute weighted accuracy.  Default is "no".
+ * </UL>
  * <p>
  * Note: The prediction group must have predictions which are {@link SingleValue}.
  * <p>
@@ -59,8 +65,10 @@ public class Accuracy extends BaseConfigurable implements Statistic {
 		Map<String, Double> stats = new HashMap<String,Double>(1);
 		Iterator<? extends Prediction> itr = predictions.getAllPredictions();
 		
-		int nummatch = 0;
-		int nummiss = 0;
+		boolean weighted = this.getYesNoParameter("weighted","no");
+		
+		double nummatch = 0;
+		double nummiss = 0;
 		while(itr.hasNext()) {
 			Prediction p = itr.next();
 			
@@ -75,9 +83,9 @@ public class Accuracy extends BaseConfigurable implements Statistic {
 			}
 			
 			if(svp.getPredValue()!=null && svp.getPredValue().equals(svp.getTrueValue())) {
-				nummatch++;
+				nummatch = weighted ? nummatch+((Weighted) p).getWeight() : nummatch+1;
 			} else {
-				nummiss++;
+				nummiss = weighted ? nummiss+((Weighted) p).getWeight() : nummiss+1;;
 			}
 		}
 		
@@ -87,7 +95,7 @@ public class Accuracy extends BaseConfigurable implements Statistic {
 					" Use SimpleBinaryMeasures instead.");
 		}
 		
-		double acc = ((double) nummatch/(double) (nummatch+nummiss));
+		double acc = nummatch/(nummatch+nummiss);
 		stats.put(Accuracy.accuracy, acc);
 		
 		return stats;

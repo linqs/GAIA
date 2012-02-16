@@ -25,6 +25,9 @@ import linqs.gaia.graph.transformer.Transformer;
  * The result is that you will have two sets of edges,
  * the original directed edges and the undirected
  * edges which correspond to it.
+ * The result is equivalent to calling
+ * {@link EdgeUtils#copyDir2Undir(Graph, String, String, boolean)}
+ * with the last argument set to true.
  * 
  * Required Parameters:
  * <UL>

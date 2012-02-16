@@ -72,7 +72,6 @@ public class CoAffiliate extends Neighbor {
 	private String adjacentsid = null;
 	private String affiliatesid = null;
 	private String dirtype = null;
-	private boolean shouldInitialize = true;
 	private boolean includeself = false;
 	
 	public CoAffiliate() {
@@ -85,8 +84,7 @@ public class CoAffiliate extends Neighbor {
 		this.setParameter("affiliatesid", affiliatesid);
 	}
 	
-	private void initialize() {
-		shouldInitialize = false;
+	protected void initialize() {
 		incidentsid = this.getStringParameter("incidentsid");
 		
 		if(this.hasParameter("adjacentsid")) {
@@ -103,10 +101,6 @@ public class CoAffiliate extends Neighbor {
 
 	@Override
 	protected Iterable<GraphItem> calcNeighbors(GraphItem gi) {
-		if(shouldInitialize) {
-			this.initialize();
-		}
-		
 		Set<GraphItem> coaffiliates = new HashSet<GraphItem>();
 		
 		SchemaType inctype = gi.getGraph().getSchemaType(incidentsid);

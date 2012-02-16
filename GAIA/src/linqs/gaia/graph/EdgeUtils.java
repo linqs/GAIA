@@ -16,18 +16,27 @@
 */
 package linqs.gaia.graph;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import linqs.gaia.exception.InvalidStateException;
+import linqs.gaia.exception.UnsupportedTypeException;
+import linqs.gaia.feature.FeatureUtils;
 import linqs.gaia.feature.schema.Schema;
 import linqs.gaia.feature.schema.SchemaType;
 import linqs.gaia.identifiable.GraphID;
 import linqs.gaia.identifiable.GraphItemID;
 import linqs.gaia.util.IteratorUtils;
 
+/**
+ * Utility functions for accessing, manipulating, and creating edges
+ * 
+ * @author namatag
+ *
+ */
 public class EdgeUtils {
 	/**
 	 * Add equivalent undirected edges from directed edges.
@@ -113,5 +122,121 @@ public class EdgeUtils {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * Create an edge with the same nodes as the specified edge
+	 * but with the specified schema ID.
+	 * <p>
+	 * Note: An exception is thrown if the a schema of the specified
+	 * copy schema id is not specified.
+	 * 
+	 * @param e Edge to copy
+	 * @param copysid Schema ID of edge to copy
+	 * @param copyfeatures If true, copy the features of the original nodes and false otherwise
+	 * @return Copy edge
+	 */
+	public static Edge copyEdge(Edge e, String copysid, boolean copyfeatures) {
+		Edge copye = null;
+		Graph g = e.getGraph();
+		if(e instanceof DirectedEdge) {
+			DirectedEdge de = (DirectedEdge) e;
+			Iterator<Node> sources = de.getSourceNodes();
+			Iterator<Node> targets = de.getTargetNodes();
+			copye = g.addDirectedEdge(new GraphItemID(copysid,e.getID().getObjID()), sources, targets);
+		} else if(e instanceof UndirectedEdge) {
+			UndirectedEdge ue = (UndirectedEdge) e;
+			Iterator<Node> nodes = ue.getAllNodes();
+			copye = g.addUndirectedEdge(new GraphItemID(copysid,e.getID().getObjID()), nodes);
+		} else {
+			throw new UnsupportedTypeException("Unsupported edge type: "+e.getClass().getCanonicalName());
+		}
+		
+		if(copyfeatures) {
+			FeatureUtils.copyFeatureValues(e, copye);
+		}
+		
+		return copye;
+	}
+	
+	/**
+	 * Add an edge to the specified graph with the "equivalent"
+	 * set of nodes and the same values.
+	 * This assumes that the schema of the edge is already defined
+	 * in the graph and that the graph contains an equivalent
+	 * node for each node incident the specified edge.
+	 * 
+	 * @param g Graph to add equivalent edge into
+	 * @param e Edge to create an equivalent copy of
+	 * @param copyfeatures If true, copy the feature values of
+	 * the original edge to the equivalent edge.  An exception
+	 * is thrown if the two edges do not have the same schema
+	 * @return Equivalent edge added
+	 */
+	public static Edge addEquivalentEdge(Graph g, Edge e, boolean copyfeatures) {
+		Edge newe;
+		// Add an equivalent edge
+		if(e instanceof DirectedEdge) {
+			DirectedEdge de = (DirectedEdge) e;
+			List<Node> sources = new ArrayList<Node>();
+			Iterator<Node> nitr = de.getSourceNodes();
+			while(nitr.hasNext()) {
+				Node orign = nitr.next();
+				GraphItem gi = g.getEquivalentGraphItem(orign);
+				if(gi==null) {
+					throw new InvalidStateException("Cannot add equivalent edge since" +
+							" a node in the edge was encountered without an equivalent node" +
+							" in the graph: "+orign);
+				}
+				
+				sources.add((Node) gi);
+			}
+			
+			List<Node> targets = new ArrayList<Node>();
+			nitr = de.getTargetNodes();
+			while(nitr.hasNext()) {
+				Node orign = nitr.next();
+				GraphItem gi = g.getEquivalentGraphItem(orign);
+				if(gi==null) {
+					throw new InvalidStateException("Cannot add equivalent edge since" +
+							" a node in the edge was encountered without an equivalent node" +
+							" in the graph: "+orign);
+				}
+				
+				targets.add((Node) gi);
+			}
+			
+			newe = g.addDirectedEdge(de.getID().copyWithoutGraphID(),
+					sources,
+					targets);
+			
+			
+		} else if(e instanceof UndirectedEdge) {
+			UndirectedEdge ue = (UndirectedEdge) e;
+			
+			List<Node> uenodes = new ArrayList<Node>();
+			Iterator<Node> nitr = ue.getAllNodes();
+			while(nitr.hasNext()) {
+				Node orign = nitr.next();
+				GraphItem gi = g.getEquivalentGraphItem(orign);
+				if(gi==null) {
+					throw new InvalidStateException("Cannot add equivalent edge since" +
+							" a node in the edge was encountered without an equivalent node" +
+							" in the graph: "+orign);
+				}
+				
+				uenodes.add((Node) gi);
+			}
+			
+			newe = g.addUndirectedEdge(e.getID().copyWithoutGraphID(), uenodes);
+		} else {
+			throw new UnsupportedTypeException("Unsupported edge type: "+e);
+		}
+		
+		if(copyfeatures) {
+			FeatureUtils.copyFeatureValues(e, newe);
+		}
+		
+		return newe;
 	}
 }

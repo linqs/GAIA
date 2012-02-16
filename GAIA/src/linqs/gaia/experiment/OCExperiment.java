@@ -82,6 +82,10 @@ import linqs.gaia.util.ListUtils;
  *          <UL>
  *          <LI>trainioclass-Required for across network. {@link IO} class, instantiated using {@link Dynamic#forConfigurableName},
  *          to use in loading the training graph
+ *          <LI>trainioclasses-Required for across network (if trainioclass is not specified).
+ *          {@link IO} classes, instantiated using {@link Dynamic#forConfigurableName},
+ *          to use in loading the training graph which are then merged into a single large graph
+ *          (using {@link GraphUtils#copyGraphItems}) for use in learning the classifiers.
  *          <LI>testioclass-Required for across network. {@link IO} class, instantiated using {@link Dynamic#forConfigurableName},
  *          to use in loading the testing graph
  *          </UL>
@@ -638,12 +642,31 @@ public class OCExperiment extends Experiment {
 	 */
 	public void runAcrossNetwork() {
 		// Load IO class
-		IO testio = (IO) Dynamic.forConfigurableName(IO.class, this.getStringParameter("testioclass"));
-		IO trainio = (IO) Dynamic.forConfigurableName(IO.class, this.getStringParameter("trainioclass"));
-		testio.copyParameters(this);
-		trainio.copyParameters(this);
+		Graph traingraph = null;
 		
-		Graph traingraph = trainio.loadGraph();
+		if(this.hasParameter("trainioclasses")) {
+			String trainioclasses = this.getStringParameter("trainioclasses");
+			String[] parts = trainioclasses.split(",");
+			for(int i=0; i<parts.length; i++) {
+				IO io = (IO) Dynamic.forConfigurableName(IO.class, parts[i], this);
+				Graph currg = io.loadGraph();
+				if(traingraph == null) {
+					traingraph = currg.copySchema("merged");
+				}
+				
+				// Merge objects where the graph items are added with the given prefix
+				GraphUtils.copyGraphItems(currg, traingraph, i+"-");
+			}
+		} else if(this.hasParameter("trainioclass")) {
+			IO trainio = (IO) Dynamic.forConfigurableName(IO.class, this.getStringParameter("trainioclass"));
+			trainio.copyParameters(this);
+			traingraph = trainio.loadGraph();
+		} else {
+			throw new ConfigurationException("No training graphs defined");
+		}
+		
+		IO testio = (IO) Dynamic.forConfigurableName(IO.class, this.getStringParameter("testioclass"));
+		testio.copyParameters(this);
 		Graph testgraph = testio.loadGraph();
 		
 		// Load graph event listeners to the train graph

@@ -65,8 +65,6 @@ import linqs.gaia.util.UnmodifiableList;
  * <LI> unorderedpairs-If "yes", instead of defining a numeric feature for all
  * ordered pairs of labels (e.g., for labels A and B, compute for ordered pairs AA,AB,BA,BB)
  * only define a numeric feature for a single numeric feature for each unordered pair of labels (e.g., AA,AB,BB).
- * When applied to undirected edges, this value is set to "yes" by default.
- * For directed edges, the default is "no".
  * <LI> delimiter-Delimiter to use in between the two categorical features.
  * Default is "-".
  * </UL>
@@ -87,11 +85,7 @@ public class EdgeNodeLabelMatch extends BaseDerived implements
 	private static NumValue match = new NumValue(1);
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(features == null) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {		
 		// Feature applicable only to edges
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only defined for edges: "+
@@ -156,14 +150,12 @@ public class EdgeNodeLabelMatch extends BaseDerived implements
 	}
 
 	public UnmodifiableList<SimplePair<String, CVFeature>> getFeatures() {
-		if(features == null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		return features;
 	}
 	
-	private void initialize() {
+	protected void initialize() {		
 		featureschemaid = this.getStringParameter("featureschemaid");
 		featureid = this.getStringParameter("featureid");
 		if(this.hasParameter("delimiter")) {

@@ -50,11 +50,14 @@ import linqs.gaia.util.UnmodifiableSet;
  */
 public class MultiIDNeighbor extends Neighbor {
 	private static final long serialVersionUID = 1L;
+	private String midfid;
+	
+	protected void initialize() {
+		midfid = this.getStringParameter("midfid");
+	}
 	
 	@Override
 	protected Iterable<GraphItem> calcNeighbors(GraphItem gi) {
-		String midfid = this.getStringParameter("midfid");
-		
 		List<GraphItem> neighbors = new ArrayList<GraphItem>();
 		FeatureValue fv = gi.getFeatureValue(midfid);
 		
@@ -88,5 +91,4 @@ public class MultiIDNeighbor extends Neighbor {
 		
 		return neighbors;
 	}
-
 }

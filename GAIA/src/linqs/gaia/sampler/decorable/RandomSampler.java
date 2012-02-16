@@ -83,7 +83,7 @@ public class RandomSampler extends DecorableSampler {
 		// Show statistics per split
 		if(Log.SHOWDEBUG) {
 			for(int i=0; i<this.numsubsets;i++){
-				Log.DEBUG("Split "+i+": "+subsets.size());
+				Log.DEBUG("Size of Split "+i+": "+subsets.get(i).size());
 			}
 		}
 	}

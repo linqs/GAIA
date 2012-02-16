@@ -103,7 +103,6 @@ public class BinaryNeighborXOR extends BaseDerived implements
 	
 	@Override
 	protected FeatureValue calcFeatureValue(Decorable di) {
-		this.initialize();
 		
 		if(!(di instanceof GraphItem)) {
 			throw new UnsupportedTypeException("Feature only defined for graph items: "
@@ -215,11 +214,7 @@ public class BinaryNeighborXOR extends BaseDerived implements
 	/**
 	 * Initialize information required by the feature
 	 */
-	protected void initialize() {
-		if(features!=null) {
-			return;
-		}
-		
+	protected void initialize() {		
 		// Initialize neighbor information
 		if(this.hasParameter("neighborclass")) {
 			this.neighborclass = this.getStringParameter("neighborclass");
@@ -262,7 +257,7 @@ public class BinaryNeighborXOR extends BaseDerived implements
 	}
 	
 	public UnmodifiableList<SimplePair<String, CVFeature>> getFeatures() {
-		this.initialize();
+		this.initializeFeature();
 		
 		return features;
 	}

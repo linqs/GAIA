@@ -47,11 +47,7 @@ import linqs.gaia.util.SimplePair;
 public class NeighborValuePercent extends NeighborValueCount {
 	private static NumValue numvalue0 = new NumValue(0.0);
 	
-	public FeatureValue calcFeatureValue(Decorable di) {
-		if(features==null) {
-			this.initialize();
-		}
-		
+	public FeatureValue calcFeatureValue(Decorable di) {		
 		// Get counts of features from neighbors
 		KeyedSum<String> count = this.getCount(di, this.weightbyprob);
 		List<FeatureValue> fvalues = new LinkedList<FeatureValue>();

@@ -16,6 +16,12 @@
 */
 package linqs.gaia.experiment;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
+
 import linqs.gaia.exception.ConfigurationException;
 import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.GraphUtils;
@@ -23,6 +29,7 @@ import linqs.gaia.graph.generator.Generator;
 import linqs.gaia.graph.generator.decorator.Decorator;
 import linqs.gaia.graph.io.IO;
 import linqs.gaia.graph.noise.Noise;
+import linqs.gaia.graph.statistic.GraphStatistic;
 import linqs.gaia.log.Log;
 import linqs.gaia.util.Dynamic;
 import linqs.gaia.util.SimpleTimer;
@@ -48,6 +55,9 @@ import linqs.gaia.util.SimpleTimer;
  * (to instantiate using {@link Dynamic#forConfigurableName}) to use add attributes to the graph
  * <LI>noiseclasses-Comma delimited list of configurable {@link Noise} classes
  * (to instantiate using {@link Dynamic#forConfigurableName}) to use add noise to the graph
+ * <LI>graphstats-Comma delimited list of {@link GraphStatistic} classes,
+ * instantiated using in {@link Dynamic#forConfigurableName},
+ * to calculate over the loaded graph
  * </UL>
  * 
  * @see linqs.gaia.util.Dynamic#forConfigurableName(Class, String)
@@ -110,6 +120,33 @@ public class GraphGeneratorExperiment extends Experiment {
 		
 		// Print statistics of the generated graph
 		Log.INFO("Final Graph: \n"+GraphUtils.getGraphOverview(g));
+		
+		if(this.hasParameter("graphstats")) {
+			// Load requested Graph Statistics
+			List<String> graphstats = Arrays.asList(this.getStringParameter("graphstats").split(","));
+			boolean isfirst = true;
+			for(String gsclass:graphstats) {
+				GraphStatistic gs = (GraphStatistic)
+					Dynamic.forConfigurableName(GraphStatistic.class, gsclass);
+				gs.copyParameters(this);
+				
+				// Calculate statistics
+				Map<String, String> stats = gs.getStatisticStrings(g);
+				
+				// Print statistics
+				if(isfirst) {
+					isfirst = false;
+				} else {
+					Log.INFO("");
+				}
+				
+				Log.INFO("Statistic "+gs.getClass().getCanonicalName()+":");
+				Set<Entry<String,String>> entries = stats.entrySet();
+				for(Entry<String,String> entry:entries) {
+					Log.INFO(entry.getKey()+"="+entry.getValue());
+				}
+			}
+		}
 		
 		// Get io
 		if(this.hasParameter("ioclass")) {

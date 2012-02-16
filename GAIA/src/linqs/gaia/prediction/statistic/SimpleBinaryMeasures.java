@@ -41,7 +41,8 @@ import linqs.gaia.prediction.SingleValue;
  * <LI>specificity: Defined as tn/(fp+tn)
  * <LI>precision: Defined as tp/(tp+fp)
  * <LI>recall: Defined as tp/(tp+fn)
- * <LI>fmeasure: Defined as (2.0*precision*recall)/(precision+recall)
+ * <LI>fmeasure: Defined as ((1+(Beta*Beta))*precision*recall)/((Beta*Beta*precision)+recall)
+ * where Beta, be default, is set to 1 (i.e., F1 measure)
  * <LI>tpr: Defined as tp/(tp + fn) (aka: True Positive Rate)
  * <LI>fpr: Defined as fp/(fp + tn) (aka: False Positive Rate)
  * <LI>numpos: Defined as tp + fn
@@ -63,6 +64,7 @@ import linqs.gaia.prediction.SingleValue;
  * Optional Parameters:
  * <UL>
  * <LI>sbmstatistics-Comma delimited statistics you want returned i.e.: accuracy,precision
+ * <LI>beta-Beta value for fmeasure computation.  This must be a positive real.  Default is 1.
  * </UL>
  * 
  * @author namatag
@@ -97,7 +99,12 @@ public class SimpleBinaryMeasures extends BaseConfigurable implements Statistic 
 		double recall = (double) tp/(tp+fn);
 		recall = Double.isNaN(recall) ? 0 : recall;
 		
-		double fmeasure = (double) (2.0*precision*recall)/(precision+recall);
+		double beta = this.getDoubleParameter("beta",1.0);
+		if(beta<=0 || Double.isInfinite(beta) || Double.isNaN(beta)) {
+			throw new ConfigurationException("Beta value for F-Measure must be a positive real number: "+beta);
+		}
+		double betasqrd = beta*beta;
+		double fmeasure = (double) ((1+betasqrd)*precision*recall)/((betasqrd*precision)+recall);
 		fmeasure = Double.isNaN(fmeasure) ? 0 : fmeasure;
 		
 		double tpr = recall;

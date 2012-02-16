@@ -22,9 +22,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import linqs.gaia.exception.ConfigurationException;
-import linqs.gaia.exception.InvalidStateException;
 import linqs.gaia.exception.UnsupportedTypeException;
-import linqs.gaia.feature.schema.Schema;
 import linqs.gaia.feature.values.FeatureValue;
 import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.GraphItem;
@@ -52,29 +50,25 @@ import linqs.gaia.log.Log;
  * <LI>targetonly-Return only nodes which are adjacent as a target to a common incident edge
  * <LI>all-Return all adjecent nodes (Default)
  * </UL>
+ * <LI> includeself-If yes, include self as one of the neighbors.
+ * Default is no.
  * </UL>
  * 
  * @author namatag
  *
  */
-public class Adjacent extends Neighbor {
+public class Adjacent extends NeighborWithOmmission {
 	private static final long serialVersionUID = 1L;
-	private boolean initialize = true;
 	private int dirtype = 3;
 	private String connectingsid = null;
 	private boolean ignoreconnvalue = false;
 	private String fname = null;
 	private String fvalue = null;
+	private boolean includeself = false;
 	
-	private void initialize(GraphItem gi) {
-		initialize = false;
-		
+	protected void initialize() {
 		if(this.hasParameter("connectingsid")){
 			connectingsid = this.getStringParameter("connectingsid");
-			
-			if(!gi.getGraph().hasSchema(connectingsid)) {
-				throw new ConfigurationException("Invalid connecting schema id: "+connectingsid);
-			}
 		}
 		
 		if(this.hasParameter("dirtype")) {
@@ -101,21 +95,112 @@ public class Adjacent extends Neighbor {
 		}
 		
 		ignoreconnvalue = false;
-		if(connectingsid!=null && fname!=null) {
-			Schema schema = gi.getGraph().getSchema(connectingsid);
-			if(!schema.hasFeature(fname)) {
-				ignoreconnvalue = true;
-				
-				throw new InvalidStateException("Connecting feature not defined: "+fname);
-			}
-		}
+		
+		includeself = this.hasYesNoParameter("includeself", "yes");
 	}
 	
 	@Override
-	public Iterable<GraphItem> calcNeighbors(GraphItem gi) {
-		if(initialize) {
-			this.initialize(gi);
+	protected Iterable<GraphItem> calcNeighbors(GraphItem gi, GraphItem ignoregi) {
+		Set<GraphItem> deps = new HashSet<GraphItem>();
+		if(gi instanceof Node){
+			// Handle nodes
+			Node n = (Node) gi;
+			
+			// Specify certain types of edges
+			Iterator<? extends Edge> eitr = null;
+			if(dirtype == 1) {
+				eitr = (connectingsid == null) 
+					? n.getEdgesWhereTarget() : n.getEdgesWhereTarget(connectingsid);
+			} else if(dirtype == 2) {
+				eitr = (connectingsid == null)
+					? n.getEdgesWhereSource() : n.getEdgesWhereSource(connectingsid);
+			} else {
+				eitr = (connectingsid == null)
+					? n.getAllEdges() : n.getAllEdges(connectingsid);
+			}
+			
+			// Iterate over all edges
+			while(eitr.hasNext()){
+				Edge e = eitr.next();
+				
+				if(ignoregi!=null && ignoregi.equals(e)) {
+					continue;
+				}
+				
+				if(!ignoreconnvalue && fname != null) {
+					FeatureValue f = e.getFeatureValue(fname);
+					if(!f.getStringValue().equals(fvalue) || f.equals(FeatureValue.UNKNOWN_VALUE)){
+						continue;
+					}
+				}
+				
+				Iterator<Node> nitr = e.getAllNodes();
+				while(nitr.hasNext()) {
+					Node currn = nitr.next();
+					
+					if(ignoregi!=null && ignoregi.equals(currn)) {
+						continue;
+					}
+					
+					deps.add(currn);
+				}
+			}
+		} else if(gi instanceof Edge){
+			// Handle edges
+			Edge rel = (Edge) gi;
+			Iterator<Node> nitr = rel.getAllNodes();
+			while(nitr.hasNext()) {
+				Node n = nitr.next();
+				
+				if(ignoregi!=null && ignoregi.equals(n)) {
+					continue;
+				}
+				
+				if(connectingsid != null && !n.getSchemaID().equals(connectingsid)){
+					continue;
+				}
+				
+				if(fname != null) {
+					if(n.getSchema().hasFeature(fname)) {
+						FeatureValue f = n.getFeatureValue(fname);
+						
+						if(f.equals(FeatureValue.UNKNOWN_VALUE)
+								|| !f.getStringValue().equals(fvalue)){
+							continue;
+						}
+					} else {
+						Log.WARN("Connecting feature not defined: "+fname);
+					}
+				}
+				
+				Iterator<Edge> eitr = n.getAllEdges();
+				while(eitr.hasNext()) {
+					Edge curre = eitr.next();
+					
+					if(ignoregi!=null && ignoregi.equals(curre)) {
+						continue;
+					}
+					
+					deps.add(curre);
+				}
+			}
+		} else {
+			throw new UnsupportedTypeException("Unsupported type: "+gi.getClass().getCanonicalName());
 		}
+		
+		// Do not include the data item itself
+		deps.removeAll(Arrays.asList(new GraphItem[]{gi}));
+		
+		if(includeself) {
+			deps.add(gi);
+		}
+		
+		return deps;
+	}
+	
+	@Override
+	protected Iterable<GraphItem> calcNeighbors(GraphItem gi, Set<GraphItem> ignoreset) {
+		GraphItem ignoregi = ignoreset.size()==1 ? ignoreset.iterator().next() : null;
 		
 		Set<GraphItem> deps = new HashSet<GraphItem>();
 		if(gi instanceof Node){
@@ -139,6 +224,14 @@ public class Adjacent extends Neighbor {
 			while(eitr.hasNext()){
 				Edge e = eitr.next();
 				
+				if(ignoregi!=null) {
+					if(ignoregi==n) {
+						continue;
+					}
+				} else if(ignoreset.contains(e)) {
+					continue;
+				}
+				
 				if(!ignoreconnvalue && fname != null) {
 					FeatureValue f = e.getFeatureValue(fname);
 					if(!f.getStringValue().equals(fvalue) || f.equals(FeatureValue.UNKNOWN_VALUE)){
@@ -148,7 +241,17 @@ public class Adjacent extends Neighbor {
 				
 				Iterator<Node> nitr = e.getAllNodes();
 				while(nitr.hasNext()) {
-					deps.add(nitr.next());
+					Node currn = nitr.next();
+					
+					if(ignoregi!=null) {
+						if(ignoregi==currn) {
+							continue;
+						}
+					} else if(ignoreset.contains(currn)) {
+						continue;
+					}
+					
+					deps.add(currn);
 				}
 			}
 		} else if(gi instanceof Edge){
@@ -157,6 +260,14 @@ public class Adjacent extends Neighbor {
 			Iterator<Node> nitr = rel.getAllNodes();
 			while(nitr.hasNext()) {
 				Node n = nitr.next();
+				
+				if(ignoregi!=null) {
+					if(ignoregi==n) {
+						continue;
+					}
+				} else if(ignoreset.contains(n)) {
+					continue;
+				}
 				
 				if(connectingsid != null && !n.getSchemaID().equals(connectingsid)){
 					continue;
@@ -177,7 +288,17 @@ public class Adjacent extends Neighbor {
 				
 				Iterator<Edge> eitr = n.getAllEdges();
 				while(eitr.hasNext()) {
-					deps.add(eitr.next());
+					Edge curre = eitr.next();
+					
+					if(ignoregi!=null) {
+						if(ignoregi==curre) {
+							continue;
+						}
+					} else if(ignoreset.contains(curre)) {
+						continue;
+					}
+					
+					deps.add(curre);
 				}
 			}
 		} else {
@@ -187,6 +308,16 @@ public class Adjacent extends Neighbor {
 		// Do not include the data item itself
 		deps.removeAll(Arrays.asList(new GraphItem[]{gi}));
 		
+		if(includeself) {
+			deps.add(gi);
+		}
+		
 		return deps;
+	}
+	
+	@Override
+	protected Iterable<GraphItem> calcNeighbors(GraphItem gi) {
+		GraphItem ignoregi = null;
+		return calcNeighbors(gi, ignoregi);
 	}
 }

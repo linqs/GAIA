@@ -16,7 +16,7 @@
 */
 package linqs.gaia.graph.datagraph.feature.explicit;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.exception.InvalidAssignmentException;
 import linqs.gaia.feature.ExplicitFeature;
@@ -28,10 +28,10 @@ import linqs.gaia.feature.values.StringValue;
 
 public class DGExplicitString extends ExplicitString implements StringFeature, DGExplicitFeature {
 	private ExplicitString es = null;
-	private HashMap<Integer,String> id2value;
+	private ConcurrentHashMap<Integer,String> id2value;
 
 	public DGExplicitString(ExplicitString es) {
-		this.id2value = new HashMap<Integer, String>();
+		this.id2value = new ConcurrentHashMap<Integer, String>();
 		this.es = es;
 	}
 

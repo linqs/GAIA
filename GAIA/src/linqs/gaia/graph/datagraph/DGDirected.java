@@ -17,6 +17,7 @@
 package linqs.gaia.graph.datagraph;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -42,12 +43,12 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 	
 	public DGDirected(DataGraph graph, GraphItemID id) {
 		super(graph, id);
-		this.sources = new HashSet<Node>(1);
-		this.targets = new HashSet<Node>(1);
+		this.sources = Collections.synchronizedSet(new HashSet<Node>(1));
+		this.targets = Collections.synchronizedSet(new HashSet<Node>(1));
 	}
 
 	@Override
-	protected void nodeRemovedNotification(Node n) {
+	protected synchronized void nodeRemovedNotification(Node n) {
 		this.removeNode(n);
 	}
 
@@ -120,7 +121,7 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 		return allitems;
 	}
 
-	public void addSourceNode(Node n) {
+	public synchronized void addSourceNode(Node n) {
 		if(!this.getGraph().hasNode(n.getID())) {
 			throw new InvalidStateException("Node not a part of this graph: "+n
 					+" not in "+this.getGraph());
@@ -137,7 +138,7 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 		((DGNode) n).edgeAddedNotification(this, true);
 	}
 
-	public void addTargetNode(Node n) {
+	public synchronized void addTargetNode(Node n) {
 		if(!this.getGraph().hasNode(n.getID())) {
 			throw new InvalidStateException("Node not a part of this graph: "+n
 					+" not in "+this.getGraph());
@@ -170,12 +171,12 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 		return this.targets.contains(n);
 	}
 
-	public void removeSourceNode(Node n) {
+	public synchronized void removeSourceNode(Node n) {
 		((DGNode) n).edgeRemovedNotification(this);
 		this.sources.remove(n);
 	}
 
-	public void removeTargetNode(Node n) {
+	public synchronized void removeTargetNode(Node n) {
 		((DGNode) n).edgeRemovedNotification(this);
 		this.targets.remove(n);
 	}
@@ -216,7 +217,7 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 		return this.sources.contains(n) || this.targets.contains(n);
 	}
 
-	public void removeNode(Node n) {
+	public synchronized void removeNode(Node n) {
 		boolean removed = false;
 		if(this.isSource(n)){
 			removed = true;
@@ -229,7 +230,8 @@ public class DGDirected extends DGEdge implements DirectedEdge {
 		}
 		
 		if(!removed){
-			throw new InvalidOperationException("Node is not incident on this edge: "+GraphItemUtils.getNodeIDString(n));
+			throw new InvalidOperationException("Node is not incident on this edge: "
+					+GraphItemUtils.getNodeIDString(n));
 		}
 	}
 

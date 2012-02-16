@@ -113,11 +113,7 @@ public class NeighboringNodeSimilarity extends BaseDerived implements
 	}
 
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(neighbor == null) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {	
 		if(!(di instanceof GraphItem)) {
 			throw new UnsupportedTypeException("Feature only defined for graph items");
 		}

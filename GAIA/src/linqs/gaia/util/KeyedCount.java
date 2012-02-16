@@ -47,8 +47,8 @@ public class KeyedCount<K> implements Serializable {
 	 * Constructor
 	 */
 	public KeyedCount(){
-		counts = new LinkedHashMap<K, Integer>();
-		keys = new LinkedHashSet<K>();
+		counts = Collections.synchronizedMap(new LinkedHashMap<K, Integer>());
+		keys = Collections.synchronizedSet(new LinkedHashSet<K>());
 		totalCount = 0;
 	}
 	
@@ -59,15 +59,7 @@ public class KeyedCount<K> implements Serializable {
 	 * @param key Key
 	 */
 	public void increment(K key){
-		int newcount = 0;
-		if(counts.containsKey(key)){
-			newcount = counts.get(key);
-		}
-		
-		newcount++;
-		counts.put(key, newcount);
-		keys.add(key);
-		totalCount++;
+		this.increment(key, 1);
 	}
 	
 	/**
@@ -80,15 +72,17 @@ public class KeyedCount<K> implements Serializable {
 	 * @param key Key
 	 */
 	public void increment(K key, int numincrement){
-		int newcount = 0;
-		if(counts.containsKey(key)){
-			newcount = counts.get(key);
+		synchronized(this) {
+			int newcount = 0;
+			if(counts.containsKey(key)){
+				newcount = counts.get(key);
+			}
+			
+			newcount+=numincrement;
+			counts.put(key, newcount);
+			keys.add(key);
+			totalCount+=numincrement;
 		}
-		
-		newcount+=numincrement;
-		counts.put(key, newcount);
-		keys.add(key);
-		totalCount+=numincrement;
 	}
 	
 	/**
@@ -98,15 +92,17 @@ public class KeyedCount<K> implements Serializable {
 	 * @param key Key
 	 */
 	public void decrement(K key){
-		int newcount = 0;
-		if(counts.containsKey(key)){
-			newcount = counts.get(key);
+		synchronized(this) {
+			int newcount = 0;
+			if(counts.containsKey(key)){
+				newcount = counts.get(key);
+			}
+			
+			newcount--;
+			counts.put(key, newcount);
+			keys.add(key);
+			totalCount--;
 		}
-		
-		newcount--;
-		counts.put(key, newcount);
-		keys.add(key);
-		totalCount--;
 	}
 	
 	/**
@@ -272,9 +268,11 @@ public class KeyedCount<K> implements Serializable {
 	 * @param key Key to remove
 	 */
 	public void removeKey(K key) {
-		if(this.counts.containsKey(key)) {
-			this.counts.remove(key);
-			this.keys.remove(key);
+		synchronized(this) {
+			if(this.counts.containsKey(key)) {
+				this.counts.remove(key);
+				this.keys.remove(key);
+			}
 		}
 	}
 	
@@ -357,12 +355,14 @@ public class KeyedCount<K> implements Serializable {
 	 * @param count Count value
 	 */
 	public void setCount(K key, int count) {
-		int oldcount = this.getCount(key);
-		int diff = oldcount - count;
-		this.totalCount = this.totalCount - diff;
-		
-		this.counts.put(key, count);
-		this.keys.add(key);
+		synchronized(this) {
+			int oldcount = this.getCount(key);
+			int diff = oldcount - count;
+			this.totalCount = this.totalCount - diff;
+			
+			this.counts.put(key, count);
+			this.keys.add(key);
+		}
 	}
 	
 	/**

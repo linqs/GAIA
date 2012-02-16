@@ -16,7 +16,7 @@
 */
 package linqs.gaia.graph.datagraph.feature.explicit;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.exception.InvalidAssignmentException;
 import linqs.gaia.feature.ExplicitFeature;
@@ -30,10 +30,10 @@ import linqs.gaia.util.UnmodifiableSet;
 
 public class DGExplicitMultiID extends ExplicitMultiID implements MultiIDFeature, DGExplicitFeature {
 	private ExplicitMultiID emid = null;
-	private HashMap<Integer,UnmodifiableSet<ID>> id2value;
+	private ConcurrentHashMap<Integer,UnmodifiableSet<ID>> id2value;
 	
 	public DGExplicitMultiID(ExplicitMultiID es) {
-		this.id2value = new HashMap<Integer, UnmodifiableSet<ID>>();
+		this.id2value = new ConcurrentHashMap<Integer, UnmodifiableSet<ID>>();
 		this.emid = es;
 	}
 	

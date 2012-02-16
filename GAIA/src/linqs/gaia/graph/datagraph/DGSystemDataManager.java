@@ -68,11 +68,11 @@ public class DGSystemDataManager implements SystemDataManager {
 		return this.dec_sdmanager.get(key).get(id);
 	}
 
-	public void setSystemData(String key, String value) {
+	public synchronized void setSystemData(String key, String value) {
 		this.sdmanager.put(key, value);
 	}
 
-	public void setSystemData(ID id, String key, String value) {
+	public synchronized void setSystemData(ID id, String key, String value) {
 		if(!this.dec_sdmanager.containsKey(key)) {
 			this.dec_sdmanager.put(key, new ConcurrentHashMap<ID,String>());
 		}

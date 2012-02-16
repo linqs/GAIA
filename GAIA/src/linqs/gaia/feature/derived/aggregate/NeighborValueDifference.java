@@ -91,11 +91,7 @@ public class NeighborValueDifference extends DerivedComposite implements
 	private static NumValue numvalue0 = new NumValue(0.0);
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(features==null) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {		
 		if(!(di instanceof GraphItem)) {
 			throw new UnsupportedTypeException("Feature only defined for graph items: "
 					+di.getClass().getCanonicalName());
@@ -150,9 +146,7 @@ public class NeighborValueDifference extends DerivedComposite implements
 	 * @param neighbor Neighbor class to use
 	 */
 	public void setNeighbor(Neighbor neighbor) {
-		if(features==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		this.neighbor = neighbor;
 	}
@@ -194,9 +188,7 @@ public class NeighborValueDifference extends DerivedComposite implements
 	}
 	
 	public UnmodifiableList<SimplePair<String, CVFeature>> getFeatures() {
-		if(features==null) {
-			this.initialize();
-		}
+		this.initializeFeature();
 		
 		return features;
 	}

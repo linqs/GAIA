@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import linqs.gaia.exception.InvalidStateException;
 import linqs.gaia.exception.UnsupportedTypeException;
+import linqs.gaia.feature.decorable.Decorable;
 import linqs.gaia.util.IteratorUtils;
 
 public class GraphItemUtils {
@@ -247,5 +249,26 @@ public class GraphItemUtils {
 		}
 		
 		return randomitem;
+	}
+	
+	/**
+	 * Get the graphs containing the specified set of graph items
+	 * 
+	 * @param itr Iterator over decorable items (assumed to be graph items)
+	 * @return Graphs containing those decorable items
+	 */
+	public static Set<Graph> getGraphs(Iterator<? extends Decorable> itr) {
+		Set<Graph> graphs = new HashSet<Graph>(1);
+		while(itr.hasNext()) {
+			Decorable d = itr.next();
+			if(!(d instanceof GraphItem)) {
+				throw new InvalidStateException("Decorable item expected to be a GraphItem: "+d);
+			}
+			
+			GraphItem gi = (GraphItem) d;
+			graphs.add(gi.getGraph());
+		}
+		
+		return graphs;
 	}
 }

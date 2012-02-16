@@ -80,4 +80,9 @@ public class GroovyString extends DerivedString {
 		
 		return df;
 	}
+	
+	@Override
+	protected void initialize() {
+		// Do nothing;		
+	}
 }

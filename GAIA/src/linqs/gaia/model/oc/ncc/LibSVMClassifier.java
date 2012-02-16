@@ -584,9 +584,18 @@ public class LibSVMClassifier extends BaseVBClassifier implements VBClassifier {
 	public void loadVBOC(String directory) {
 		this.targetcategories = new UnmodifiableList<String>(Arrays.asList(
 				this.getStringParameter("saved-targetcategories").split(",")));
+		
+		this.numcats = targetcategories.size();
 
 		this.actualfeatureids = Arrays.asList(
 				this.getStringParameter("saved-actualfeatureids").split(","));
+		
+		List<String> values = Arrays.asList(
+				this.getStringParameter("saved-actualfeatureisnumeric").split(","));
+		this.actualfeatureisnumeric = new ArrayList<Boolean>(values.size());
+		for(String value:values) {
+			this.actualfeatureisnumeric.add(Boolean.parseBoolean(value));
+		}
 
 		// Initialize from saved parameters
 		this.initialize();
@@ -620,6 +629,8 @@ public class LibSVMClassifier extends BaseVBClassifier implements VBClassifier {
 				IteratorUtils.iterator2string(this.targetcategories.iterator(), ","));
 		this.setParameter("saved-actualfeatureids",
 				ListUtils.list2string(this.actualfeatureids, ","));
+		this.setParameter("saved-actualfeatureisnumeric",
+				ListUtils.list2string(this.actualfeatureisnumeric, ","));
 		
 		if(this.minvalue!=null) {
 			this.setParameter("saved-minvalues", ArrayUtils.array2String(this.minvalue,","));

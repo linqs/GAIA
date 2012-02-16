@@ -16,6 +16,8 @@
 */
 package linqs.gaia.util;
 
+import java.util.List;
+
 public class ArrayUtils {
 	/**
 	 * Return index of minimum value
@@ -71,6 +73,36 @@ public class ArrayUtils {
 		}
 		
 		return maxindex;
+	}
+	
+	/**
+	 * Return the indices of the top K value
+	 * 
+	 * @param array Array of doubles
+	 * @param k Number of indices to return
+	 * @return Array of indices
+	 */
+	public static int[] topKIndices(double[] array, int k){
+		int length = array.length;
+		if(length == 0) {
+			return new int[0];
+		}
+		
+		TopK<Integer> topk = new TopK<Integer>(k);
+		for(int i=0; i<length; i++) {
+			Integer index = i;
+			Double value = array[i];
+			topk.add(value, index);
+		}
+		
+		List<Integer> indices = topk.getTopKSorted();
+		int topsize = indices.size();
+		int[] topkindices = new int[topsize];
+		for(int i=0; i<topsize; i++) {
+			topkindices[i] = indices.get(i);
+		}
+		
+		return topkindices;
 	}
 	
 	/**

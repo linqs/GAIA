@@ -205,7 +205,7 @@ public abstract class DGGraphItem implements GraphItem {
 		return id.getSchemaID();
 	}
 
-	public void setFeatureValue(String featureid, FeatureValue value) {
+	public synchronized void setFeatureValue(String featureid, FeatureValue value) {
 
 		Schema schema = ((DataGraph) this.graph).getInternalSchema(id.getSchemaID());
 
@@ -225,7 +225,7 @@ public abstract class DGGraphItem implements GraphItem {
 		this.graph.processListeners(new FeatureSetEvent(this, featureid, previous, value));
 	}
 
-	public void setFeatureValue(String featureid, String value) {
+	public synchronized void setFeatureValue(String featureid, String value) {
 		Schema schema = ((DataGraph) this.graph).getInternalSchema(id.getSchemaID());
 
 		if(!schema.hasFeature(featureid)) {
@@ -267,7 +267,7 @@ public abstract class DGGraphItem implements GraphItem {
 		this.graph.processListeners(new FeatureSetEvent(this, featureid, previous, newvalue));
 	}
 
-	public void setFeatureValue(String featureid, double value) {
+	public synchronized void setFeatureValue(String featureid, double value) {
 		Schema schema = ((DataGraph) this.graph).getInternalSchema(id.getSchemaID());
 
 		if(!schema.hasFeature(featureid)) {
@@ -299,7 +299,7 @@ public abstract class DGGraphItem implements GraphItem {
 		this.graph.processListeners(new FeatureSetEvent(this, featureid, previous, newvalue));
 	}
 
-	public void setFeatureValues(List<String> featureids, List<FeatureValue> values) {
+	public synchronized void setFeatureValues(List<String> featureids, List<FeatureValue> values) {
 		if(featureids==null || values==null) {
 			throw new InvalidStateException("Feature ids or values is null:"
 					+" featureids="+featureids
@@ -318,7 +318,7 @@ public abstract class DGGraphItem implements GraphItem {
 		}
 	}
 
-	public void removeFeatureValue(String featureid) {
+	public synchronized void removeFeatureValue(String featureid) {
 		if(this.getFeatureValue(featureid).equals(FeatureValue.UNKNOWN_VALUE)) {
 			throw new InvalidOperationException("Value to remove is already unknown: "+featureid);
 		}

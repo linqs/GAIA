@@ -55,7 +55,7 @@ public class EdgeNodeNeighborAdjacency extends DerivedNum {
 	private boolean normalize = true;
 	private String edgesid = null;
 	
-	private void initialize() {
+	protected void initialize() {
 		String neighborclass = Adjacent.class.getCanonicalName();
 		if(this.hasParameter("neighborclass")) {
 			neighborclass = this.getStringParameter("neighborclass");
@@ -77,16 +77,13 @@ public class EdgeNodeNeighborAdjacency extends DerivedNum {
 	 * @param neighbor Neighbor class to use
 	 */
 	public void setNeighbor(Neighbor neighbor) {
-		this.initialize();
+		this.initializeFeature();
+		
 		this.neighbor = neighbor;
 	}
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(neighbor==null) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {	
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only valid for edges: "+
 					di.getClass().getCanonicalName());

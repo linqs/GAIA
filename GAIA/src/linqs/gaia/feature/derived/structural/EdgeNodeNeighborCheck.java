@@ -22,6 +22,7 @@ import linqs.gaia.exception.UnsupportedTypeException;
 import linqs.gaia.feature.decorable.Decorable;
 import linqs.gaia.feature.derived.DerivedCateg;
 import linqs.gaia.feature.derived.neighbor.Neighbor;
+import linqs.gaia.feature.derived.neighbor.NeighborWithOmmission;
 import linqs.gaia.feature.values.CategValue;
 import linqs.gaia.feature.values.FeatureValue;
 import linqs.gaia.global.Constants;
@@ -30,6 +31,7 @@ import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.GraphItem;
 import linqs.gaia.graph.Node;
 import linqs.gaia.graph.UndirectedEdge;
+import linqs.gaia.identifiable.GraphItemID;
 import linqs.gaia.model.lp.LinkPredictor;
 import linqs.gaia.util.Dynamic;
 import linqs.gaia.util.UnmodifiableList;
@@ -51,6 +53,10 @@ import linqs.gaia.util.UnmodifiableList;
  * <LI>existfid-If specified, the feature first changes the feature
  * specified by this ID to non-existent.  This allows the neighbor computation
  * to occur regardless of whether or not this edge is predicted to exist or not. 
+ * <LI>ignoreedge-If "yes", ignore this edge when doing this computation
+ * (e.g., assume edge does not exist).  Default is "no".
+ * <LI>ignoresid-If specified, ignore edges with this schema id and the same
+ * object as the current edge.  Default is not to do anything.
  * </UL>
  * 
  * @author namatag
@@ -58,29 +64,29 @@ import linqs.gaia.util.UnmodifiableList;
  */
 public class EdgeNodeNeighborCheck extends DerivedCateg {
 	UnmodifiableList<String> categs = new UnmodifiableList<String>(Constants.FALSETRUE);
-	private boolean initialize = true;
 	private Neighbor neighbor = null;
 	private String existfid = null;
 	
 	private static CategValue truevalue = new CategValue(Constants.TRUE, new double[]{0,1});
 	private static CategValue falsevalue = new CategValue(Constants.FALSE, new double[]{1,0});
 	
-	private void initialize() {
-		initialize=false;
+	private boolean ignoreedge = false;
+	private String ignoresid = null;
+	
+	protected void initialize() {
 		String neighborclass = this.getStringParameter("neighborclass");
 		neighbor = (Neighbor) Dynamic.forConfigurableName(Neighbor.class, neighborclass, this);
 		
 		if(this.hasParameter("existfid")) {
 			existfid = this.getStringParameter("existfid");
 		}
+		
+		ignoreedge = this.getYesNoParameter("ignoreedge","no");
+		ignoresid = this.getStringParameter("ignoresid",null);
 	}
 	
 	@Override
 	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			this.initialize();
-		}
-		
 		// Only supports edges
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only defined for edges: "+di);
@@ -99,6 +105,21 @@ public class EdgeNodeNeighborCheck extends DerivedCateg {
 			di.setFeatureValue(existfid, LinkPredictor.NOTEXISTVALUE);
 		}
 		
+		// Get ignore set, if requested
+		GraphItem ignoregi = null;
+		if(ignoreedge) {
+			Edge e = (Edge) di;
+			if(ignoresid!=null) {
+				GraphItemID gid = new GraphItemID(ignoresid, e.getID().getObjID());
+				GraphItem gi = e.getGraph().getGraphItem(gid);
+				if(gi!=null) {
+					ignoregi = gi;
+				}
+			} else {
+				ignoregi = e;
+			}
+		}
+		
 		Node n1 = null;
 		Node n2 = null;
 		if(di instanceof DirectedEdge) {
@@ -113,7 +134,9 @@ public class EdgeNodeNeighborCheck extends DerivedCateg {
 		}
 		
 		FeatureValue returnval = falsevalue;
-		Iterable<GraphItem> n1neighbors = neighbor.getNeighbors(n1);
+		Iterable<GraphItem> n1neighbors = ignoreedge ?
+				((NeighborWithOmmission) neighbor).getNeighbors(n1,ignoregi)
+				: neighbor.getNeighbors(n1);
 		for(GraphItem gi:n1neighbors) {
 			if(gi.equals(n2)) {
 				returnval = truevalue;
@@ -123,7 +146,9 @@ public class EdgeNodeNeighborCheck extends DerivedCateg {
 		// Do opposite direction for undirected edges
 		// to handle case where the neighbor definition may not be symmetric
 		if(di instanceof UndirectedEdge && !returnval.equals(truevalue)) {
-			Iterable<GraphItem> n2neighbors = neighbor.getNeighbors(n2);
+			Iterable<GraphItem> n2neighbors = ignoreedge ?
+					((NeighborWithOmmission) neighbor).getNeighbors(n2,ignoregi)
+					: neighbor.getNeighbors(n2);
 			for(GraphItem gi:n2neighbors) {
 				if(gi.equals(n1)) {
 					returnval = truevalue;

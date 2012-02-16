@@ -45,10 +45,8 @@ public class EdgeNodeStringSimilarity extends DerivedNum {
 	private String fid = null;
 	private NormalizedStringSimilarity stringsim = null;
 	private static NumValue val0 = new NumValue(0);
-	private boolean initialize = true;
 	
-	private void initialize() {
-		initialize = false;
+	protected void initialize() {
 		fid = this.getStringParameter("featureid");
 		String stringsimclass = this.getStringParameter("stringsimclass");
 		stringsim = (NormalizedStringSimilarity) Dynamic.forConfigurableName(NormalizedStringSimilarity.class,
@@ -56,11 +54,7 @@ public class EdgeNodeStringSimilarity extends DerivedNum {
 	}
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {		
 		// Feature applicable only to edges
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only defined for edges: "+

@@ -27,12 +27,14 @@ import linqs.gaia.feature.decorable.Decorable;
 import linqs.gaia.feature.derived.DerivedNum;
 import linqs.gaia.feature.derived.neighbor.Adjacent;
 import linqs.gaia.feature.derived.neighbor.Neighbor;
+import linqs.gaia.feature.derived.neighbor.NeighborWithOmmission;
 import linqs.gaia.feature.values.CategValue;
 import linqs.gaia.feature.values.FeatureValue;
 import linqs.gaia.feature.values.NumValue;
 import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.GraphItem;
 import linqs.gaia.graph.Node;
+import linqs.gaia.identifiable.GraphItemID;
 import linqs.gaia.model.lp.LinkPredictor;
 import linqs.gaia.similarity.NormalizedSetSimilarity;
 import linqs.gaia.similarity.set.CommonNeighbor;
@@ -79,13 +81,15 @@ import linqs.gaia.util.Dynamic;
  * Default is {@link linqs.gaia.similarity.set.CommonNeighbor}.
  * <LI> normalize-If "yes", use the normalized set similarity value, and if "no"
  * use the unnormalized value.  Default is yes.
+ * <LI> cachecoref-If "yes", create a static cache of co-referent nodes
+ * for each node where the cache is only cleared using {@link #clearCorefCache()}.
+ * Default is "no".
  * </UL>
  * 
  * @author namatag
  *
  */
 public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
-	private boolean initialize = true;
 	private String corefsid = null;
 	private String coreffid = null;
 	private String referstosid = null;
@@ -95,27 +99,25 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 	private boolean normalize = true;
 	private NormalizedSetSimilarity nss = null;
 	
-	public static Map<String, Set<GraphItem>> crcache = new HashMap<String,Set<GraphItem>>();
+	private boolean cachecoref = false;
+	private static Map<String, Set<GraphItem>> crcache = new HashMap<String,Set<GraphItem>>();
+	
+	private boolean ignoreedge = false;
+	private String ignoresid = null;
 	
 	public void cacheNeighbor() {
-		if(initialize) {
-			initialize();
-		}
+		this.initializeFeature();
 		
 		this.neighbor.setCache(true);
 	}
 	
 	public void clearNeighborCache() {
-		if(initialize) {
-			initialize();
-		}
+		this.initializeFeature();
 		
 		this.neighbor.resetAll();
 	}
 	
-	private void initialize() {
-		initialize = false;
-		
+	protected void initialize() {		
 		corefsid = this.getStringParameter("corefsid");
 		coreffid = this.getStringParameter("coreffid");
 		referstosid = this.getStringParameter("referstosid");
@@ -137,14 +139,15 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 		}
 		nss = (NormalizedSetSimilarity)
 			Dynamic.forConfigurableName(NormalizedSetSimilarity.class, nssclass, this);
+		
+		ignoreedge = this.getYesNoParameter("ignoreedge","no");
+		ignoresid = this.getStringParameter("ignoresid",null);
+		
+		cachecoref = this.getYesNoParameter("cachecoref","no");
 	}
 	
 	@Override
 	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			initialize();
-		}
-		
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only valid for edges: "+
 					di.getClass().getCanonicalName());
@@ -169,18 +172,32 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 			}
 		}
 		
+		// Get ignore set, if requested
+		GraphItem ignoregi = null;
+		if(ignoreedge) {
+			if(ignoresid!=null) {
+				GraphItemID gid = new GraphItemID(ignoresid, e.getID().getObjID());
+				GraphItem gi = e.getGraph().getGraphItem(gid);
+				if(gi!=null) {
+					ignoregi = gi;
+				}
+			} else {
+				ignoregi = e;
+			}
+		}
+		
 		// Get nodes
 		Iterator<Node> nitr = e.getAllNodes();
 		Node n1 = nitr.next();
 		Node n2 = nitr.next();
 		
 		// Get neighbors for nodes
-		Set<GraphItem> set1 = this.getCACNeighbor(n1, e, crcache, isremoved);
+		Set<GraphItem> set1 = this.getCACNeighbor(n1, e, isremoved, ignoregi);
 		// If n1 and n2 are coreferent, they're going to return the same set of neighbors
 		// so no need to recompute
 		String crcachekey = e.getID().toString()+"-"+n1.getID().toString();
 		Set<GraphItem> set2 = (crcache.containsKey(crcachekey) && crcache.get(crcachekey).contains(n2))
-			? set1 : this.getCACNeighbor(n2, e, crcache, isremoved);	
+			? set1 : this.getCACNeighbor(n2, e, isremoved, ignoregi);	
 		
 		// Return previous state
 		if(isremoved) {
@@ -194,14 +211,17 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 		}
 	}
 	
-	private Set<GraphItem> getCACNeighbor(Node n, Edge e, Map<String,Set<GraphItem>> crcache, boolean isremoved) {
+	private Set<GraphItem> getCACNeighbor(Node n, Edge e,
+			boolean isremoved, GraphItem ignoregi) {
 		// Get corefs
-		Set<GraphItem> nodecorefs = this.getCorefences(n, e, crcache, isremoved);
+		Set<GraphItem> nodecorefs = this.getCorefences(n, e, isremoved, ignoregi);
 		
 		// Get neighbors of corefs
 		Set<GraphItem> neighbors = new HashSet<GraphItem>();
 		for(GraphItem corefn:nodecorefs) {
-			Iterable<GraphItem> nitrbl = this.neighbor.getNeighbors(corefn);
+			Iterable<GraphItem> nitrbl = ignoreedge ?
+					((NeighborWithOmmission) neighbor).getNeighbors(corefn, ignoregi)
+					: this.neighbor.getNeighbors(corefn);
 			for(GraphItem crneighbor:nitrbl) {
 				neighbors.add(crneighbor);
 			}
@@ -216,17 +236,20 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 				continue;
 			}
 			
-			neighborcorefs.addAll(this.getCorefences(n, e, crcache, isremoved));
+			neighborcorefs.addAll(this.getCorefences(n, e, isremoved, ignoregi));
 		}
 		
 		return neighborcorefs;
 	}
 	
-	private Set<GraphItem> getCorefences(Node n, Edge e, Map<String,Set<GraphItem>> crcache, boolean isremoved) {
+	private Set<GraphItem> getCorefences(Node n, Edge e,
+			boolean isremoved, GraphItem ignoregi) {
 		// Return cached value, if available
-		String crkey = e.getID().toString()+"-"+n.getID().toString();
-		if(crcache.containsKey(crkey)) {
-			return crcache.get(crkey);
+		if(cachecoref) {
+			String crkey = e.getID().toString()+"-"+n.getID().toString();
+			if(crcache.containsKey(crkey)) {
+				return crcache.get(crkey);
+			}
 		}
 		
 		Set<GraphItem> coreferences = new HashSet<GraphItem>();
@@ -241,6 +264,11 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 				Iterator<Edge> eitr = currn.getAllEdges(corefsid);
 				while(eitr.hasNext()) {
 					Edge curre = eitr.next();
+					
+					if(ignoreedge && ignoregi.equals(curre)) {
+						continue;
+					}
+					
 					CategValue existfid = (CategValue) curre.getFeatureValue(coreffid);
 					if(existfid.hasCateg(LinkPredictor.NOTEXIST)) {
 						continue;
@@ -264,13 +292,40 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 			// the previous time step is non-existent
 			// i.e., nodes computed this way are coreferent whether or not
 			// his particular edge exists.
-			Iterator<GraphItem> entityitr = n.getAdjacentGraphItems(referstosid);
-			while(entityitr.hasNext()) {
-				GraphItem entity = entityitr.next();
-				Iterator<GraphItem> entityrefitr = entity.getAdjacentGraphItems(referstosid);
-				while(entityrefitr.hasNext()) {
-					GraphItem entityref = entityrefitr.next();
-					coreferences.add(entityref);
+			Iterator<Edge> rtitr = n.getAllEdges(referstosid);
+			Set<Node> entities = new HashSet<Node>();
+			while(rtitr.hasNext()) {
+				Edge rte = rtitr.next();
+				
+				if(ignoreedge && ignoregi.equals(rte)) {
+					continue;
+				}
+				
+				Iterator<Node> nitr = rte.getAllNodes();
+				while(nitr.hasNext()) {
+					Node rtn = nitr.next();
+					if(!rtn.equals(n)) {
+						entities.add(rtn);
+					}
+				}
+			}
+			
+			for(Node entity:entities) {
+				Iterator<Edge> eitr = entity.getAllEdges(referstosid);
+				while(eitr.hasNext()) {
+					Edge rte = eitr.next();
+					
+					if(ignoreedge && ignoregi.equals(rte)) {
+						continue;
+					}
+					
+					Iterator<Node> nitr = rte.getAllNodes();
+					while(nitr.hasNext()) {
+						Node rtn = nitr.next();
+						if(!rtn.equals(entity) && !rtn.equals(n)) {
+							coreferences.add(rtn);
+						}
+					}
 				}
 			}
 		}
@@ -279,10 +334,19 @@ public class EdgeNodeNeighborCorefSimilarity extends DerivedNum {
 		coreferences.add(n);
 		
 		// Cache coreferences
-		for(GraphItem cr:coreferences) {
-			crcache.put(e.getID().toString()+"-"+cr.getID().toString(), coreferences);
+		if(cachecoref) {
+			for(GraphItem cr:coreferences) {
+				crcache.put(e.getID().toString()+"-"+cr.getID().toString(), coreferences);
+			}
 		}
 		
 		return coreferences;
+	}
+	
+	/*
+	 * Clear the static Co-Reference cache used by this feature
+	 */
+	public static void clearCorefCache() {
+		crcache.clear();
 	}
 }

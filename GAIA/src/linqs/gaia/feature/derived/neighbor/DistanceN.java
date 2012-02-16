@@ -59,7 +59,6 @@ public class DistanceN extends Neighbor {
 	private boolean distinct = false;
 	private String schemaid = null;
 	private int depth = Integer.MAX_VALUE;
-	private boolean initialize = true;
 	private boolean includeself = false;
 	
 	public DistanceN(){
@@ -76,9 +75,7 @@ public class DistanceN extends Neighbor {
 		this.adj = adj;
 	}
 	
-	private void initialize() {
-		initialize = false;
-		
+	protected void initialize() {
 		this.distinct = this.hasYesNoParameter("distinct","yes");
 		
 		if(this.hasParameter("schemaid")) {
@@ -103,10 +100,6 @@ public class DistanceN extends Neighbor {
 	
 	@Override
 	public Iterable<GraphItem> calcNeighbors(GraphItem gi) {
-		if(initialize) {
-			this.initialize();
-		}
-		
 		Set<GraphItem> deps = new HashSet<GraphItem>();
 		List<Set<GraphItem>> depths = new ArrayList<Set<GraphItem>>();
 		Set<GraphItem> added = new HashSet<GraphItem>();

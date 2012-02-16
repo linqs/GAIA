@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import linqs.gaia.exception.ConfigurationException;
 import linqs.gaia.graph.GraphItem;
 import linqs.gaia.util.Dynamic;
 
@@ -34,7 +35,9 @@ import linqs.gaia.util.Dynamic;
  * until the last neighbor class is applied to the second
  * to the last set of neighbors.
  * The last set of neighbors are then returned.
- * 
+ * <p>
+ * Note: The graph item itself is never returned as its own neighbor.
+ * <p>
  * Required Parameters:
  * <UL>
  * <LI> neighborclasses-Comma delimited set of neighbor classes where each
@@ -44,15 +47,12 @@ import linqs.gaia.util.Dynamic;
  * @author namatag
  *
  */
-public class NeigborsOfNeighbors extends Neighbor {
+public class NeigborsOfNeighbors extends NeighborWithOmmission {
 	private static final long serialVersionUID = 1L;
 	
-	private boolean initialize = true;
 	private List<Neighbor> neighbors = null;
 	
-	private void initialize() {
-		initialize = false;
-		
+	protected void initialize() {
 		String[] nclasses = this.getStringParameter("neighborclasses").split(",");
 		neighbors = new ArrayList<Neighbor>(nclasses.length);
 		for(String n:nclasses) {
@@ -62,17 +62,20 @@ public class NeigborsOfNeighbors extends Neighbor {
 	}
 	
 	@Override
-	protected Iterable<GraphItem> calcNeighbors(GraphItem gi) {
-		if(initialize) {
-			this.initialize();
-		}
-		
+	protected Iterable<GraphItem> calcNeighbors(GraphItem gi, Set<GraphItem> ignoreset) {
 		Set<GraphItem> lastset = new HashSet<GraphItem>();
 		lastset.add(gi);
 		for(Neighbor n:neighbors) {
 			Set<GraphItem> currset = new HashSet<GraphItem>();
 			for(GraphItem currgi:lastset) {
-				Iterable<GraphItem> itrbl = n.getNeighbors(currgi);
+				Iterable<GraphItem> itrbl = null;
+				if(n instanceof NeighborWithOmmission) {
+					itrbl = ((NeighborWithOmmission) n).getNeighbors(currgi, ignoreset);
+				} else {
+					throw new ConfigurationException("Neighbor class is not able to handle the ignore set: "
+							+n.getClass().getCanonicalName());
+				}
+				
 				for(GraphItem ngi:itrbl) {
 					currset.add(ngi);
 				}
@@ -84,6 +87,40 @@ public class NeigborsOfNeighbors extends Neighbor {
 		lastset.remove(gi);
 		
 		return lastset;
+	}
+	
+	@Override
+	protected Iterable<GraphItem> calcNeighbors(GraphItem gi, GraphItem ignoregi) {
+		Set<GraphItem> lastset = new HashSet<GraphItem>();
+		lastset.add(gi);
+		for(Neighbor n:neighbors) {
+			Set<GraphItem> currset = new HashSet<GraphItem>();
+			for(GraphItem currgi:lastset) {
+				Iterable<GraphItem> itrbl = null;
+				if(n instanceof NeighborWithOmmission) {
+					itrbl = ((NeighborWithOmmission) n).getNeighbors(currgi, ignoregi);
+				} else {
+					throw new ConfigurationException("Neighbor class is not able to handle the ignore set: "
+							+n.getClass().getCanonicalName());
+				}
+				
+				for(GraphItem ngi:itrbl) {
+					currset.add(ngi);
+				}
+			}
+			
+			lastset=currset;
+		}
+		
+		lastset.remove(gi);
+		
+		return lastset;
+	}
+	
+	@Override
+	protected Iterable<GraphItem> calcNeighbors(GraphItem gi) {
+		GraphItem ignoregi = null;
+		return calcNeighbors(gi, ignoregi);
 	}
 	
 	/**

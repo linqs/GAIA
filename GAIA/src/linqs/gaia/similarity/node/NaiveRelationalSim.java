@@ -91,44 +91,54 @@ public class NaiveRelationalSim extends BaseConfigurable
 	private boolean initialize = true;
 	
 	private void initialize(Graph graph) {
-		initialize = false;
+		if(!initialize) {
+			return;
+		}
 		
-		// Initialize feature similarity
-		if(this.hasParameter("featuresimclass")) {
-			String featuresimclass = this.getStringParameter("featuresimclass");
-			featuresim = (NormalizedListSimilarity) 
-				Dynamic.forConfigurableName(NormalizedListSimilarity.class, featuresimclass);
-			featuresim.copyParameters(this);
+		synchronized(this) {
+			if(!initialize) {
+				return;
+			}
 			
-			// Get feature ids to perform feature similarity over
-			this.nodeschemaid = this.getStringParameter("nodeschemaid");
-			Schema schema = graph.getSchema(this.nodeschemaid);
-			featureids = FeatureUtils.parseFeatureList(this,
-					schema, FeatureUtils.getFeatureIDs(schema, 2));
-		}
-		
-		// Initialize relational similarity
-		if(this.hasParameter("relsimclass")) {
-			String relsimclass = this.getStringParameter("relsimclass");
-			relsim = (NormalizedSetSimilarity) 
-				Dynamic.forConfigurableName(NormalizedSetSimilarity.class, relsimclass);
-			relsim.copyParameters(this);
-		}
-		
-		// Get neighbor class
-		if(this.hasParameter("neighborclass")) {
-			String neighborclass = this.getStringParameter("neighborclass");
-			this.neighbor = (Neighbor)
-				Dynamic.forConfigurableName(Neighbor.class, neighborclass);
-			this.neighbor.copyParameters(this);
-		} else {
-			this.neighbor = new Adjacent();
-		}
-		
-		// Get alpha
-		alpha = .5;
-		if(this.hasParameter("alpha")) {
-			this.alpha = this.getDoubleParameter("alpha");
+			// Initialize feature similarity
+			if(this.hasParameter("featuresimclass")) {
+				String featuresimclass = this.getStringParameter("featuresimclass");
+				featuresim = (NormalizedListSimilarity) 
+					Dynamic.forConfigurableName(NormalizedListSimilarity.class, featuresimclass);
+				featuresim.copyParameters(this);
+				
+				// Get feature ids to perform feature similarity over
+				this.nodeschemaid = this.getStringParameter("nodeschemaid");
+				Schema schema = graph.getSchema(this.nodeschemaid);
+				featureids = FeatureUtils.parseFeatureList(this,
+						schema, FeatureUtils.getFeatureIDs(schema, 2));
+			}
+			
+			// Initialize relational similarity
+			if(this.hasParameter("relsimclass")) {
+				String relsimclass = this.getStringParameter("relsimclass");
+				relsim = (NormalizedSetSimilarity) 
+					Dynamic.forConfigurableName(NormalizedSetSimilarity.class, relsimclass);
+				relsim.copyParameters(this);
+			}
+			
+			// Get neighbor class
+			if(this.hasParameter("neighborclass")) {
+				String neighborclass = this.getStringParameter("neighborclass");
+				this.neighbor = (Neighbor)
+					Dynamic.forConfigurableName(Neighbor.class, neighborclass);
+				this.neighbor.copyParameters(this);
+			} else {
+				this.neighbor = new Adjacent();
+			}
+			
+			// Get alpha
+			alpha = .5;
+			if(this.hasParameter("alpha")) {
+				this.alpha = this.getDoubleParameter("alpha");
+			}
+			
+			initialize = false;
 		}
 	}
 

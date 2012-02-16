@@ -130,7 +130,7 @@ public abstract class DGSchemaManager extends BaseConfigurable implements Schema
 	public abstract void removeSchema(String schemaID);
 	protected abstract String getGraphSchemaID();
 	
-	public void removeAllSchemas() {
+	public synchronized void removeAllSchemas() {
 		Set<String> schemaids = this.id2internalschema.keySet();
 		for(String sid:schemaids){
 			if(sid.equals(this.getGraphSchemaID())) {
@@ -149,7 +149,7 @@ public abstract class DGSchemaManager extends BaseConfigurable implements Schema
 	 * @param schema Schema
 	 * @param oldschema Schema to update.  Set to null if not updating schema.
 	 */
-	protected void setSchema(String schemaID, Schema schema, Schema oldschema){
+	protected synchronized void setSchema(String schemaID, Schema schema, Schema oldschema){
 		Schema internalschema = schema.copy();
 		
 		if(oldschema != null && !internalschema.getType().equals(oldschema.getType())) {
@@ -257,7 +257,7 @@ public abstract class DGSchemaManager extends BaseConfigurable implements Schema
 	
 	public abstract void addSchema(String schemaID, Schema schema);
 	
-	public void replaceSchema(String schemaID, Schema schema) {
+	public synchronized void replaceSchema(String schemaID, Schema schema) {
 		if(!this.hasSchema(schemaID)){
 			throw new InvalidOperationException("Schema was not previously defined: "+schemaID);
 		}
@@ -266,7 +266,7 @@ public abstract class DGSchemaManager extends BaseConfigurable implements Schema
 		this.setSchema(schemaID, schema, oldschema);
 	}
 	
-	public void updateSchema(String schemaID, Schema schema) {
+	public synchronized void updateSchema(String schemaID, Schema schema) {
 		if(!this.hasSchema(schemaID)){
 			throw new InvalidOperationException("Schema was not previously defined: "+schemaID);
 		}

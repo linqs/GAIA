@@ -123,4 +123,71 @@ public class ProbDist {
 		
 		return p;
 	}
+	
+	/**
+	 * Compute the KL divergence between the discrete probability
+	 * distribution represented by the array of doubles.
+	 * 
+	 * Note: In order to handle the special where an element in the array q is zero,
+	 * those values are replaced with an epsilon. See {@link ProbDist#makeElementsNonZero}
+	 * for details.
+	 * 
+	 * @param p Array of doubles representing the first probility distribution
+	 * @param q Array of doubles representing the second probility distribution
+	 * @return KL-Divergence of p from q
+	 */
+	public static double computeKLDivergence(double[] p, double[] q) {
+		double kldiv = 0;
+		
+		// Ensure KL-Divergence remains defined by replacing all 0 with epsilon
+		q = ProbDist.makeElementsNonZero(q);
+		
+		int size = p.length;
+		for(int i=0; i<size; i++) {
+			if(p[i]==0) {
+				// Add 0, do nothing
+			} else {
+				kldiv += p[i] * (Math.log(p[i]/q[i]) / Math.log(2));
+			}
+		}
+		
+		return kldiv;
+	}
+	
+	/**
+	 * Compute the symmetric KL divergence between the discrete probability
+	 * distribution represented by the array of doubles.
+	 * 
+	 * Note: In order to handle the special where an element in the array q is zero,
+	 * those values are replaced with an epsilon. See {@link ProbDist#makeElementsNonZero}
+	 * for details.
+	 * 
+	 * @param p Array of doubles representing the first probility distribution
+	 * @param q Array of doubles representing the second probility distribution
+	 * @return KL-Divergence of p from q
+	 */
+	public static double computeSymmetricKLDivergence(double[] p, double[] q) {
+		return computeKLDivergence(p,q) + computeKLDivergence(q,p);
+	}
+	
+	/**
+	 * Generete a double array representing a uniform probability
+	 * distribution for the given number of possible values.
+	 * 
+	 * @param numvalues Number of possible values
+	 * @return Array representing uniform probability distribution
+	 */
+	public static double[] genUniformProbDistribution(int numvalues) {
+		if(numvalues<1) {
+			throw new InvalidStateException("Number of values must be greater than 0: "+numvalues);
+		}
+		
+		double[] probs = new double[numvalues];
+		double uniformprob = 1.0 / ((double) numvalues);
+		for(int i=0; i<numvalues; i++) {
+			probs[i] = uniformprob;
+		}
+		
+		return probs;
+	}
 }

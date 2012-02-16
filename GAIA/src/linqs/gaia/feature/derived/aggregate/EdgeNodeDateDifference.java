@@ -55,10 +55,8 @@ public class EdgeNodeDateDifference extends DerivedNum {
 	private Double normalizer = null;
 	private String dateformat = null;
 	private boolean invert = false;
-	private boolean initialize = true;
 	
-	private void initialize() {
-		initialize = false;
+	protected void initialize() {
 		fid = this.getStringParameter("featureid");
 		if(this.hasParameter("normalizer")) {
 			normalizer = this.getDoubleParameter("normalizer");
@@ -71,10 +69,6 @@ public class EdgeNodeDateDifference extends DerivedNum {
 	
 	@Override
 	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			this.initialize();
-		}
-		
 		// Feature applicable only to edges
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only defined for edges: "+

@@ -149,7 +149,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		id2edge = new ConcurrentHashMap<String,Map<String, Edge>> ();
 	}
 	
-	public Node addNode(GraphItemID id) {
+	public synchronized Node addNode(GraphItemID id) {
 		if(id==null) {
 			throw new InvalidOperationException("Graph Item ID cannot be null");
 		}
@@ -196,7 +196,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 	 * 
 	 * @param e Edge
 	 */
-	private void addEdge(Edge e){
+	private synchronized void addEdge(Edge e){
 		if(!this.id2edge.containsKey(e.getSchemaID())){
 			throw new InvalidStateException("id2edge should have been initialized already");
 		}
@@ -206,7 +206,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.processListeners(new EdgeAddedEvent(e));
 	}
 	
-	public DirectedEdge addDirectedEdge(GraphItemID id, Iterator<Node> sources, Iterator<Node> targets) {
+	public synchronized DirectedEdge addDirectedEdge(GraphItemID id, Iterator<Node> sources, Iterator<Node> targets) {
 		if(id==null) {
 			throw new InvalidOperationException("Graph Item ID cannot be null");
 		}
@@ -253,11 +253,11 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		return edge;
 	}
 	
-	public DirectedEdge addDirectedEdge(GraphItemID id, Iterable<Node> sources, Iterable<Node> targets) {
+	public synchronized DirectedEdge addDirectedEdge(GraphItemID id, Iterable<Node> sources, Iterable<Node> targets) {
 		return addDirectedEdge(id, sources.iterator(), targets.iterator());
 	}
 	
-	public DirectedEdge addDirectedEdge(GraphItemID id, Node source, Node target) {
+	public synchronized DirectedEdge addDirectedEdge(GraphItemID id, Node source, Node target) {
 		if(source == null) {
 			throw new InvalidOperationException("Source node is null for edge "+id);
 		}
@@ -271,7 +271,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 				Arrays.asList(new Node[]{target}).iterator());
 	}
 
-	public UndirectedEdge addUndirectedEdge(GraphItemID id, Iterator<Node> nodes) {
+	public synchronized UndirectedEdge addUndirectedEdge(GraphItemID id, Iterator<Node> nodes) {
 		if(id==null) {
 			throw new InvalidOperationException("Graph Item ID cannot be null");
 		}
@@ -313,11 +313,11 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		return edge;
 	}
 	
-	public UndirectedEdge addUndirectedEdge(GraphItemID id, Iterable<Node> nodes) {
+	public synchronized UndirectedEdge addUndirectedEdge(GraphItemID id, Iterable<Node> nodes) {
 		return addUndirectedEdge(id, nodes.iterator());
 	}
 	
-	public UndirectedEdge addUndirectedEdge(GraphItemID id, Node node1, Node node2) {
+	public synchronized UndirectedEdge addUndirectedEdge(GraphItemID id, Node node1, Node node2) {
 		if(node1 == null) {
 			throw new InvalidOperationException("First node is null for edge "+id);
 		}
@@ -329,7 +329,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		return addUndirectedEdge(id, Arrays.asList(new Node[]{node1,node2}));
 	}
 	
-	public UndirectedEdge addUndirectedEdge(GraphItemID id, Node node) {
+	public synchronized UndirectedEdge addUndirectedEdge(GraphItemID id, Node node) {
 		if(node == null) {
 			throw new InvalidOperationException("First node is null for edge "+id);
 		}
@@ -607,7 +607,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		return this.getNodesCollection().size();
 	}
 
-	public void removeAllEdges() {
+	public synchronized void removeAllEdges() {
 		List<Edge> edges = new LinkedList<Edge>(this.getEdgeCollections());
 		
 		for(Edge e:edges){
@@ -615,7 +615,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		}
 	}
 
-	public void removeAllNodes() {
+	public synchronized void removeAllNodes() {
 		List<Node> nodes = new LinkedList<Node>(this.getNodesCollection());
 		
 		for(Node n:nodes){
@@ -623,7 +623,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		}
 	}
 	
-	public void removeNodesWithEdges(String schemaID) {
+	public synchronized void removeNodesWithEdges(String schemaID) {
 		List<Node> nodes = IteratorUtils.iterator2nodelist(this.getNodes(schemaID));
 		
 		for(Node n:nodes){
@@ -631,7 +631,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		}
 	}
 	
-	public void removeAllGraphItems(String schemaID) {
+	public synchronized void removeAllGraphItems(String schemaID) {
 		if(this.id2node.containsKey(schemaID)){
 			Collection<Node> nodes = this.id2node.get(schemaID).values();
 			for(Node n:nodes) {
@@ -649,11 +649,11 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		}
 	}
 
-	public void removeEdge(Edge e) {
+	public synchronized void removeEdge(Edge e) {
 		this.removeEdge((GraphItemID) e.getID());
 	}
 
-	public void removeEdge(GraphItemID id) {
+	public synchronized void removeEdge(GraphItemID id) {
 		if(id==null) {
 			throw new InvalidOperationException("Graph Item ID cannot be null");
 		}
@@ -691,11 +691,11 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.processListeners(new EdgeRemovedEvent(e));
 	}
 	
-	public void removeNode(Node n) {
+	public synchronized void removeNode(Node n) {
 		this.removeNode((GraphItemID) n.getID());
 	}
 
-	public void removeNode(GraphItemID id) {
+	public synchronized void removeNode(GraphItemID id) {
 		if(id==null) {
 			throw new InvalidOperationException("Graph Item ID cannot be null");
 		}
@@ -738,7 +738,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.processListeners(new NodeRemovedEvent(n));
 	}
 	
-	public void removeNodeWithEdges(Node n) {
+	public synchronized void removeNodeWithEdges(Node n) {
 		if(n==null) {
 			throw new InvalidOperationException("Node cannot be null");
 		}
@@ -747,7 +747,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.removeNode(n);
 	}
 
-	public void removeNodeWithEdges(GraphItemID id) {
+	public synchronized void removeNodeWithEdges(GraphItemID id) {
 		if(id==null) {
 			throw new InvalidOperationException("Graph Item ID cannot be null");
 		}
@@ -756,7 +756,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.removeNodeWithEdges(n);
 	}
 	
-	public void removeGraphItem(GraphItem gi) {
+	public synchronized void removeGraphItem(GraphItem gi) {
 		if(gi instanceof Node) {
 			this.removeNode((Node) gi);
 		} else if(gi instanceof Edge) {
@@ -767,12 +767,12 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		}
 	}
 
-	public void removeGraphItem(GraphItemID id) {
+	public synchronized void removeGraphItem(GraphItemID id) {
 		GraphItem gi = this.getGraphItem(id);
 		this.removeGraphItem(gi);
 	}
 	
-	private void removeFeatureValues(Decorable d) {
+	private synchronized void removeFeatureValues(Decorable d) {
 		Schema schema = d.getSchema();
 		Iterator<SimplePair<String,Feature>> fitr = schema.getAllFeatures();
 		while(fitr.hasNext()) {
@@ -833,7 +833,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		return this.id.getSchemaID();
 	}
 
-	public void setFeatureValue(String featureid, FeatureValue value) {
+	public synchronized void setFeatureValue(String featureid, FeatureValue value) {
 		Feature f = this.getInternalSchema(this.getSchemaID()).getFeature(featureid);
 		
 		if(!(f instanceof ExplicitFeature)) {
@@ -846,7 +846,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.processListeners(new FeatureSetEvent(this, featureid, previous, value));
 	}
 	
-	public void setFeatureValue(String featureid, String value) {
+	public synchronized void setFeatureValue(String featureid, String value) {
 		Schema schema = this.getInternalSchema(id.getSchemaID());
 
 		if(!schema.hasFeature(featureid)) {
@@ -888,7 +888,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.processListeners(new FeatureSetEvent(this, featureid, previous, newvalue));
 	}
 
-	public void setFeatureValue(String featureid, double value) {
+	public synchronized void setFeatureValue(String featureid, double value) {
 		Schema schema = this.getInternalSchema(id.getSchemaID());
 
 		if(!schema.hasFeature(featureid)) {
@@ -920,7 +920,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.processListeners(new FeatureSetEvent(this, featureid, previous, newvalue));
 	}
 	
-	public void setFeatureValues(List<String> featureids, List<FeatureValue> values) {
+	public synchronized void setFeatureValues(List<String> featureids, List<FeatureValue> values) {
 		if(featureids==null || values==null) {
 			throw new InvalidStateException("Feature ids or values is null:"
 					+" featureids="+featureids
@@ -939,7 +939,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		}
 	}
 	
-	public void removeFeatureValue(String featureid) {
+	public synchronized void removeFeatureValue(String featureid) {
 		if(this.getFeatureValue(featureid).equals(FeatureValue.UNKNOWN_VALUE)) {
 			throw new InvalidOperationException("Value to remove is already unknown: "+featureid);
 		}
@@ -952,7 +952,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 	}
 	
 	// Implemented here to make sure that the id2node and id2edge features are set.
-	public void addSchema(String schemaID, Schema schema) {
+	public synchronized void addSchema(String schemaID, Schema schema) {
 		if(this.hasSchema(schemaID)){
 			throw new InvalidOperationException("Schema was previously defined: "+schemaID);
 		}
@@ -980,7 +980,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 	}
 	
 	// Implement here to make sure that the id2node and id2edge features are set.
-	public void removeSchema(String schemaID) {
+	public synchronized void removeSchema(String schemaID) {
 		if(!this.hasSchema(schemaID)) {
 			throw new InvalidOperationException("No schema with the given ID defined: "+schemaID);
 		}
@@ -1008,7 +1008,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		this.id2schema.remove(schemaID.intern());
 	}
 
-	public void addListener(GraphEventListener gel) {
+	public synchronized void addListener(GraphEventListener gel) {
 		this.eventlisteners.add(gel);
 	}
 
@@ -1018,11 +1018,11 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		}
 	}
 
-	public void removeAllListeners() {
+	public synchronized void removeAllListeners() {
 		this.eventlisteners.clear();
 	}
 
-	public void removeListener(GraphEventListener gel) {
+	public synchronized void removeListener(GraphEventListener gel) {
 		this.eventlisteners.remove(gel);
 	}
 	
@@ -1043,7 +1043,7 @@ public class DataGraph extends DGSchemaManager implements Graph {
 	    return this.id.hashCode();
 	}
 
-	public void destroy() {
+	public synchronized void destroy() {
 		// Just clear the maps instead
 		// of calling remove on each edge and node
 		this.id2edge.clear();
@@ -1158,11 +1158,11 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		return this.hasEquivalentGraphItem(gi.getID());
 	}
 
-	public void removeAllSystemData() {
+	public synchronized void removeAllSystemData() {
 		this.sdmanager.removeAllSystemData();
 	}
 
-	public void removeSystemData(ID id) {
+	public synchronized void removeSystemData(ID id) {
 		this.sdmanager.removeSystemData(id);
 	}
 
@@ -1174,19 +1174,19 @@ public class DataGraph extends DGSchemaManager implements Graph {
 		return this.sdmanager.getSystemData(id, key);
 	}
 
-	public void setSystemData(String key, String value) {
+	public synchronized void setSystemData(String key, String value) {
 		this.sdmanager.setSystemData(key, value);
 	}
 
-	public void setSystemData(ID id, String key, String value) {
+	public synchronized void setSystemData(ID id, String key, String value) {
 		this.sdmanager.setSystemData(id, key, value);
 	}
 
-	public void removeSystemData(String key) {
+	public synchronized void removeSystemData(String key) {
 		this.sdmanager.removeSystemData(key);
 	}
 
-	public void removeSystemData(ID id, String key) {
+	public synchronized void removeSystemData(ID id, String key) {
 		this.sdmanager.removeSystemData(id, key);
 	}
 

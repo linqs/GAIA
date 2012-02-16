@@ -15,5 +15,7 @@
 	<classpathentry kind="lib" path="lib/groovy-1.7.1/groovy-all-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.4/commons-codec-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/libsvm-3.0/libsvm.jar"/>
+	<classpathentry kind="lib" path="lib/junto-1.2.2/junto.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math-2.2/commons-math-2.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

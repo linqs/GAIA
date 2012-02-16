@@ -24,7 +24,8 @@ import linqs.gaia.similarity.NormalizedListSimilarity;
 import linqs.gaia.util.Numeric;
 
 /**
- * Calculate cosine similarity between two list of numeric objects.
+ * Calculate cosine similarity between two list of numeric objects
+ * (see {@link Numeric#parseDouble(Object)}).
  * The general formula for cosine similarity is given 
  * <a href="https://secure.wikimedia.org/wikipedia/en/wiki/Cosine_similarity">here</a>.
  * 

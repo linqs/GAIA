@@ -34,7 +34,7 @@ import linqs.gaia.graph.GraphItem;
 import linqs.gaia.util.UnmodifiableList;
 
 /**
- * Generate attributes based on labels (explicit categorical features).
+ * Generate attributes based on labels (explicit numerical features).
  * The attributes are generated using a naive bayes assumption.
  * The decorator works as follows.  For each label,
  * there are numwordsperlabel attributes generated so
@@ -68,6 +68,9 @@ import linqs.gaia.util.UnmodifiableList;
  * <LI> probsuccesssecondary-This is the probability of setting the values
  * based on an incorrect label.  This should be below .5 where .5
  * is random and 0 is perfect. Default is .4.
+ * <LI> probword-This is the probability that each word exists, regardless of label.
+ * This can be used to limit the number of words per document when
+ * generating a large number of words per label.  Default is 1.
  * <LI> numwordsperlabel-Number of word to generate per label. Default is 1.
  * <LI> attrprefix-Prefix to use in the feature name.  Default is "w".
  * <LI> seed-Random number generator seed.  Default is 0.
@@ -85,6 +88,7 @@ public class NaiveBayesAttributes extends BaseConfigurable implements Decorator 
 	protected int numwordsperlabel = 1;
 	private double probsuccessprimary = .65;
 	private double probsuccesssecondary = .4;
+	private double probword = 1;
 	private int seed = 0;
 	
 	public void decorate(Graph g) {
@@ -106,6 +110,10 @@ public class NaiveBayesAttributes extends BaseConfigurable implements Decorator 
 		
 		if(this.hasParameter("probsuccesssecondary")) {
 			this.probsuccesssecondary = this.getDoubleParameter("probsuccesssecondary");
+		}
+		
+		if(this.hasParameter("probword")) {
+			this.probword = this.getDoubleParameter("probword");
 		}
 		
 		if(this.hasParameter("seed")) {
@@ -161,6 +169,10 @@ public class NaiveBayesAttributes extends BaseConfigurable implements Decorator 
 		int endIndex = c*numwordsperlabel + numwordsperlabel - 1;
 
 		for(int i=0;i<totalWords;i++){
+			if(rand.nextDouble()>probword) {
+				continue;
+			}
+			
 			double r = rand.nextDouble();
 			if(i>=beginIndex && i<=endIndex) {
 				if(r<probsuccessprimary){

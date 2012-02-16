@@ -17,6 +17,7 @@
 package linqs.gaia.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -68,9 +69,9 @@ public class KeyedList<K,V> extends KeyedCollection<List<V>,K,V>{
 	@Override
 	protected List<V> createCollection() {
 		if(this.defaultsize==null) {
-			return new ArrayList<V>();
+			return Collections.synchronizedList(new ArrayList<V>());
 		} else {
-			return new ArrayList<V>(this.defaultsize);
+			return Collections.synchronizedList(new ArrayList<V>(this.defaultsize));
 		}
 	}
 }

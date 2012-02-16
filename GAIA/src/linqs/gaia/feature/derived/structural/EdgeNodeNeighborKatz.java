@@ -71,14 +71,11 @@ import linqs.gaia.util.SimplePair;
 public class EdgeNodeNeighborKatz extends DerivedNum implements GraphDependent {
 	private Graph g = null;
 	private Neighbor neighbor = null;
-	private boolean initialize = true;
 	private Map<ID,Integer> nodeindex = new HashMap<ID,Integer>();
 	private double[][] katzmatrix = null;
 	private String numvaluetype = null;
 	
-	private void initialize() {
-		initialize = false;
-		
+	protected void initialize() {
 		String neighborclass = Adjacent.class.getCanonicalName();
 		if(this.hasParameter("neighborclass")) {
 			neighborclass = this.getStringParameter("neighborclass");
@@ -116,16 +113,12 @@ public class EdgeNodeNeighborKatz extends DerivedNum implements GraphDependent {
 	 * @param neighbor Neighbor class to use
 	 */
 	public void setNeighbor(Neighbor neighbor) {
-		this.initialize();
+		this.initializeFeature();
 		this.neighbor = neighbor;
 	}
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {		
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only valid for edges: "+
 					di.getClass().getCanonicalName());

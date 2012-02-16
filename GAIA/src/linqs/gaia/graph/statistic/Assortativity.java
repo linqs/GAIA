@@ -81,7 +81,7 @@ import linqs.gaia.util.UnmodifiableList;
  *
  */
 public class Assortativity extends BaseConfigurable implements GraphStatistic {
-	private String NAME = "assortativity";
+	public static String NAME = "assortativity";
 	
 	/**
 	 * Calculate assortativity

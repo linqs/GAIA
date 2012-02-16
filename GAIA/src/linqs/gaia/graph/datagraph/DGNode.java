@@ -314,7 +314,7 @@ public class DGNode extends DGGraphItem implements Node {
 	 * 
 	 * @param e Edge
 	 */
-	protected void edgeAddedNotification(Edge e, Boolean isSource) {
+	protected synchronized void edgeAddedNotification(Edge e, Boolean isSource) {
 		// Check to see if this is a valid removal
 		if(!e.isIncident(this)) {
 			throw new InvalidStateException("Malformed Edge "+e+" suppose to contain "+this);
@@ -343,7 +343,7 @@ public class DGNode extends DGGraphItem implements Node {
 	 * 
 	 * @param e Edge
 	 */
-	protected void edgeRemovedNotification(Edge e) {
+	protected synchronized void edgeRemovedNotification(Edge e) {
 		// Check to see if this is a valid removal
 		if(!e.isIncident(this)) {
 			throw new InvalidStateException("Malformed Edge "+e+" suppose to contain "+this);
@@ -577,14 +577,14 @@ public class DGNode extends DGGraphItem implements Node {
 		return this.getAdjacentNodeSets(edgeschemaID).size();
 	}
 
-	public void removeIncidentEdges() {
+	public synchronized void removeIncidentEdges() {
 		Iterator<Edge> eitr = this.getAllEdges();
 		while(eitr.hasNext()) {
 			this.getGraph().removeEdge(eitr.next());
 		}
 	}
 
-	public void removeIncidentEdges(String edgeschemaid) {
+	public synchronized void removeIncidentEdges(String edgeschemaid) {
 		Iterator<Edge> eitr = this.getAllEdges(edgeschemaid);
 		while(eitr.hasNext()) {
 			this.getGraph().removeEdge(eitr.next());

@@ -34,6 +34,7 @@ import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.GraphItem;
 import linqs.gaia.log.Log;
 import linqs.gaia.model.oc.OCUtils;
+import linqs.gaia.util.Dynamic;
 import linqs.gaia.util.FileIO;
 import linqs.gaia.util.IteratorUtils;
 import linqs.gaia.util.ListUtils;
@@ -215,7 +216,7 @@ public abstract class BaseVBClassifier extends BaseConfigurable implements VBCla
 		this.setParameter("saved-targetfeatureid", this.targetfeatureid);
 		
 		// Save feature ids
-		this.setParameter("saved-featureids", ListUtils.list2string(this.featureids, ","));
+		this.setParameter("saved-featureids", featureids==null ? "NO_FEATURES" : ListUtils.list2string(this.featureids, ","));
 		
 		// Save classifier
 		this.saveVBOC(directory+File.separator+"vbclassifier");
@@ -238,6 +239,24 @@ public abstract class BaseVBClassifier extends BaseConfigurable implements VBCla
 			String targetschemaid, String targetfeatureid, List<String> featureids) {
 		this.learn(graph.getIterableGraphItems(targetschemaid),
 				targetschemaid, targetfeatureid, featureids);
+	}
+	
+	/**
+	 * The base, naive, implementation of this method
+	 * is to use the {@link #saveModel(String)} and {@link #loadModel(String)}
+	 * methods of the model to save the model to a file
+	 * and then create the copy by reloading the file.
+	 * Overwrite this method in models where this is too
+	 * costly to perform.
+	 */
+	public VBClassifier copyModel() {
+		String tmpdir = FileIO.getTemporaryDirectory();
+		this.saveModel(tmpdir);
+		VBClassifier vbc = (VBClassifier) Dynamic.forConfigurableName(VBClassifier.class,
+				this.getClass().getCanonicalName());
+		vbc.loadModel(tmpdir);
+		
+		return vbc;
 	}
 	
 	public UnmodifiableList<String> getFeatureIDs() {

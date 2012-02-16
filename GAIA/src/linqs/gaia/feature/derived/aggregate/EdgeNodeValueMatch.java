@@ -29,7 +29,8 @@ import linqs.gaia.graph.Node;
 /**
  * Numeric valued feature defined for binary edges.
  * This features returns a 1 if the string representation
- * of a features value is the same for both incident nodes.
+ * of a features value is the same for both incident nodes,
+ * and 0 otherwise.
  * 
  * Required Parameters:
  * <UL>
@@ -51,20 +52,14 @@ public class EdgeNodeValueMatch extends DerivedNum {
 	private String commonvalue = null;
 	private static NumValue val0 = new NumValue(0);
 	private static NumValue val1 = new NumValue(1);
-	private boolean initialize = true;
 	
-	private void initialize() {
-		initialize = false;
+	protected void initialize() {
 		fid = this.getStringParameter("featureid");
 		commonvalue = this.getStringParameter("commonvalue",null);
 	}
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		if(initialize) {
-			this.initialize();
-		}
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {	
 		// Feature applicable only to edges
 		if(!(di instanceof Edge)) {
 			throw new UnsupportedTypeException("Feature only defined for edges: "+

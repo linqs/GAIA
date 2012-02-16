@@ -29,6 +29,7 @@ import java.util.Set;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.exception.InvalidStateException;
+import linqs.gaia.exception.UnsupportedTypeException;
 import linqs.gaia.feature.FeatureUtils;
 import linqs.gaia.feature.decorable.Decorable;
 import linqs.gaia.feature.schema.Schema;
@@ -91,9 +92,9 @@ import linqs.gaia.util.SimpleTimer;
  * non-relational and relational features.
  * 
  * <LI>checkprobs-If yes, when computing whether or not the predicted labels have converged
- * (not changed from the previoius iteration),
+ * (not changed from the previous iteration),
  * verify that the probability distribution has not change.  The default is no where we only
- * check that the label, regardless of the probability, has changed.
+ * check if the label value, regardless of the probability, has changed.
  * 
  * <LI>isbatch-If set to yes, only update the labels at the end of each iteration
  * such that the value of relational features are based on the values of the previous iteration.
@@ -117,6 +118,11 @@ import linqs.gaia.util.SimpleTimer;
  * <LI>printchanges-If set to yes, print the id, old value, and new value of
  * items whose values have changed in a given iteration.
  * Format "Value Change at Iteration:\tITERATION\tITEM\tOLDVALUE\tNEWVALUE". Default is no.
+ * 
+ * <LI>savebootstrapfid-If specified, save the bootstrap label for each test item
+ * to a feature with this feature ID.  This allows the efficient storage of this
+ * predicted value for use in further analysis.  If a feature with the specified
+ * feature id is not defined, it will be automatically added.
  * </UL>
  * 
  * @see linqs.gaia.util.Dynamic#forConfigurableName(Class, String)
@@ -155,6 +161,8 @@ public class ICA extends BaseConfigurable implements Classifier, BootstrapModel 
 	private String[] modadjsids = null;
 	
 	private boolean checkprobs = false;
+	
+	private String savebootstrapfid = null;
 	
 	private static final String DEFAULT_VBCLASSIFIER = LibSVMClassifier.class.getCanonicalName();
 	
@@ -249,7 +257,7 @@ public class ICA extends BaseConfigurable implements Classifier, BootstrapModel 
 		}
 		
 		// Train non-relational classifiers
-		if(bootstrap) {
+		if(bootstrap || savebootstrapfid!=null) {
 			// If bootstrapping, learn a non relational model.
 			this.nonrelvbc.learn(trainitems, targetschemaid, targetfeatureid, this.nonrelfeatures);
 		}
@@ -337,6 +345,8 @@ public class ICA extends BaseConfigurable implements Classifier, BootstrapModel 
 		}
 		
 		this.checkprobs = this.getYesNoParameter("checkprobs","no");
+		
+		this.savebootstrapfid = this.getStringParameter("savebootstrapfid", null);
 	}
 
 	public void learn(Graph traingraph, String targetschemaid,
@@ -353,7 +363,7 @@ public class ICA extends BaseConfigurable implements Classifier, BootstrapModel 
 			throw new InvalidStateException("No iterable items to predict over");
 		}
 		
-		if(bootstrap) {
+		if(bootstrap || savebootstrapfid!=null) {
 			Log.DEBUG("Applying ICA bootstrap");
 			
 			// Bootstrap by predicting labels using
@@ -362,7 +372,30 @@ public class ICA extends BaseConfigurable implements Classifier, BootstrapModel 
 			while(itr.hasNext()) {
 				Decorable d = itr.next();
 				FeatureValue fv = this.nonrelvbc.predict(d);
-				d.setFeatureValue(this.targetfeatureid, fv);
+				
+				// Update value if bootstrapping
+				if(bootstrap) {
+					d.setFeatureValue(this.targetfeatureid, fv);
+				}
+				
+				// Save bootstrap value, if requested
+				if(savebootstrapfid!=null) {
+					if(!d.getSchema().hasFeature(savebootstrapfid)) {
+						Schema schema = d.getSchema();
+						schema.addFeature(savebootstrapfid, schema.getFeature(targetfeatureid));
+						
+						if(d instanceof Graph) {
+							((Graph) d).updateSchema(targetschemaid, schema);
+						} else if(d instanceof GraphItem) {
+							((GraphItem) d).getGraph().updateSchema(targetschemaid, schema);
+						} else {
+							throw new UnsupportedTypeException("Unsupported decorable item type: "
+									+d.getClass().getCanonicalName());
+						}
+					}
+					
+					d.setFeatureValue(savebootstrapfid, fv);
+				}
 				
 				// Print bootstrap values
 				if(printbootstrap) {

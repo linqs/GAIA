@@ -51,9 +51,13 @@ public class FeatureMatch extends BaseConfigurable implements NormalizedListSimi
 	private String sparsevalue = null;
 	private boolean initialize = true;
 	
-	private void initialize() {
-		initialize = false;
+	private synchronized void initialize() {
+		if(!initialize) {
+			return;
+		}
+		
 		sparsevalue = this.getStringParameter("sparsevalue", null);
+		initialize = false;
 	}
 
 	public double getSimilarity(List<? extends Object> item1, List<? extends Object> item2) {
@@ -75,9 +79,7 @@ public class FeatureMatch extends BaseConfigurable implements NormalizedListSimi
 
 	public double getDistance(List<? extends Object> item1,
 			List<? extends Object> item2) {
-		if(initialize) {
-			this.initialize();
-		}
+		this.initialize();
 		
 		double distance = 0;
 		if(item1.size()!=item2.size()){

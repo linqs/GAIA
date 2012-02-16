@@ -31,6 +31,7 @@ import linqs.gaia.graph.GraphDependent;
 import linqs.gaia.graph.Node;
 import linqs.gaia.graph.UndirectedEdge;
 import linqs.gaia.identifiable.GraphItemID;
+import linqs.gaia.log.Log;
 import linqs.gaia.similarity.NodeSimilarity;
 import linqs.gaia.similarity.NormalizedNodeSimilarity;
 import linqs.gaia.util.BaseIterator;
@@ -53,7 +54,8 @@ import linqs.gaia.util.KeyedSet;
  * <LI>threshold2-Tight threshold value to use (t2 in the paper).
  * All nodes similar above this value are removed from the node list
  * and assumed to only belong to a specific canopy.
- * <LI>nodesimclass-Normalized node similarity measure to use.
+ * <LI>nodesimclass-Normalized node similarity ({@link NormalizedNodeSimilarity}) measure to use,
+ * instantiated using in {@link Dynamic#forConfigurableName}
  * </UL>
  * 
  * Optional Parameters:
@@ -167,6 +169,7 @@ public class Canopy extends BaseConfigurable implements PotentialLinkGenerator, 
 				
 				// Add current canopy
 				canopies.add(canopy);
+				Log.DEBUG("Size of canopy "+canopies.size()+": "+canopy.size());
 			}
 		}
 		

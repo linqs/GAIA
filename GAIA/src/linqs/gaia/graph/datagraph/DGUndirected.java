@@ -17,6 +17,7 @@
 package linqs.gaia.graph.datagraph;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -39,16 +40,12 @@ public class DGUndirected extends DGEdge implements UndirectedEdge {
 	
 	public DGUndirected(DataGraph graph, GraphItemID id) {
 		super(graph, id);
-		this.undirected = new HashSet<Node>(2);
+		this.undirected = Collections.synchronizedSet(new HashSet<Node>(2));
 	}
 
 	@Override
-	protected void nodeRemovedNotification(Node n) {
-		if(!this.isIncident(n)){
-			throw new InvalidOperationException("Node not adjacent to edge");
-		}
-		
-		this.undirected.remove(n);
+	protected synchronized void nodeRemovedNotification(Node n) {
+		this.removeNode(n);
 	}
 
 	@Override
@@ -97,7 +94,7 @@ public class DGUndirected extends DGEdge implements UndirectedEdge {
 		return connected;
 	}
 
-	public void addNode(Node n) {
+	public synchronized void addNode(Node n) {
 		if(!this.getGraph().hasNode(n.getID())) {
 			throw new InvalidStateException("Node not a part of this graph: "+n
 					+" not in graph "+this.getGraph());
@@ -133,11 +130,12 @@ public class DGUndirected extends DGEdge implements UndirectedEdge {
 		return this.undirected.contains(n);
 	}
 
-	public void removeNode(Node n) {
+	public synchronized void removeNode(Node n) {
 		((DGNode) n).edgeRemovedNotification(this);
 		this.undirected.remove(n);
 		
-		checkValidity("Removing node resulted in invalid edge: Removing "+GraphItemUtils.getNodeIDString(n)+" invalidated "+this);
+		checkValidity("Removing node resulted in invalid edge: Removing "
+				+GraphItemUtils.getNodeIDString(n)+" invalidated "+this);
 	}
 
 	public int numNodes() {

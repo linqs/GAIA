@@ -47,6 +47,9 @@ public class CosineSetSimilarity extends BaseConfigurable implements NormalizedS
 		
 		sim = isect.size() / (Math.sqrt(item1.size()) * Math.sqrt(item2.size()));
 		
+		// Handle rounding issues
+		sim = sim > 1.0 ? 1.0 : sim;
+		
 		return sim;
 	}
 	

@@ -415,7 +415,7 @@ public class Dictionary {
 	 * the pound symbol (i.e., #).
 	 * <p>
 	 * An example stop words file is available at
-	 * /resource/Internal/thirdparty/libstemmer-20090108/stopwords.txt.
+	 * lib/libstemmer-20090108/stopwords.txt.
 	 * 
 	 * @param file File of stop words
 	 */

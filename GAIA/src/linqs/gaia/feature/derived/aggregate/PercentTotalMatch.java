@@ -79,9 +79,7 @@ public class PercentTotalMatch extends BaseDerived implements
 	private boolean asbinary = false;
 	
 	@Override
-	protected FeatureValue calcFeatureValue(Decorable di) {
-		this.initialize();
-		
+	protected FeatureValue calcFeatureValue(Decorable di) {		
 		if(featureids.isEmpty()) {
 			throw new ConfigurationException("No features defined");
 		}
@@ -196,11 +194,7 @@ public class PercentTotalMatch extends BaseDerived implements
 	/**
 	 * Initialize information required by the feature
 	 */
-	protected void initialize() {
-		if(featureids!=null) {
-			return;
-		}
-		
+	protected void initialize() {		
 		// Initialize neighbor information
 		if(this.hasParameter("neighborclass")) {
 			this.neighborclass = this.getStringParameter("neighborclass");

@@ -16,7 +16,8 @@
 */
 package linqs.gaia.feature.derived;
 
-import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.exception.InvalidOperationException;
@@ -34,8 +35,9 @@ import linqs.gaia.feature.values.FeatureValue;
  *
  */
 public abstract class BaseDerived extends BaseConfigurable implements DerivedFeature {
+	private boolean initialize = true;
 	private boolean isCaching = false;
-	private HashMap<Decorable, FeatureValue> cache;
+	private Map<Decorable, FeatureValue> cache;
 	
 	public boolean isCaching() {
 		return this.isCaching;
@@ -44,7 +46,7 @@ public abstract class BaseDerived extends BaseConfigurable implements DerivedFea
 	public void resetCache() {
 		if(this.isCaching) {
 			if(cache == null) {
-				cache = new HashMap<Decorable, FeatureValue> ();
+				cache = new ConcurrentHashMap<Decorable, FeatureValue> ();
 			} else {
 				cache.clear();
 			}
@@ -54,7 +56,7 @@ public abstract class BaseDerived extends BaseConfigurable implements DerivedFea
 		}
 	}
 	
-	public void resetCache(Decorable d) {
+	public synchronized void resetCache(Decorable d) {
 		if(this.isCaching) {
 			if(cache == null) {
 				throw new InvalidStateException("Cache uninitialized.");
@@ -69,11 +71,11 @@ public abstract class BaseDerived extends BaseConfigurable implements DerivedFea
 		}
 	}
 
-	public void setCache(boolean shouldCache) {
+	public synchronized void setCache(boolean shouldCache) {
 		this.isCaching = shouldCache;
 		
 		if(this.isCaching) {
-			cache = new HashMap<Decorable, FeatureValue> ();
+			cache = new ConcurrentHashMap<Decorable, FeatureValue> ();
 		} else {
 			cache = null;
 		}
@@ -85,7 +87,7 @@ public abstract class BaseDerived extends BaseConfigurable implements DerivedFea
 	 * @param d Decorable item
 	 * @param value Feature value to cache
 	 */
-	protected void cacheValue(Decorable d, FeatureValue value) {
+	protected synchronized void cacheValue(Decorable d, FeatureValue value) {
 		this.cache.put(d, value);
 	}
 	
@@ -105,23 +107,26 @@ public abstract class BaseDerived extends BaseConfigurable implements DerivedFea
 	 * the caching for the function.
 	 */
 	public FeatureValue getFeatureValue(Decorable di) {
+		initializeFeature();
+		
 		FeatureValue value = null;
+
 		// If caching, check cache first
 		if(this.isCaching()) {
 			value = this.getCachedValue(di);
 		}
-		
+
 		// If not caching or value not in cache,
 		// calculate value.
 		if(value==null) {
 			value = this.calcFeatureValue(di);
 		}
-		
+
 		// Cache value if requested
 		if(this.isCaching()) {
 			this.cacheValue(di, value);
 		}
-		
+
 		return value;
 	}
 	
@@ -143,6 +148,29 @@ public abstract class BaseDerived extends BaseConfigurable implements DerivedFea
 	}
 	
 	/**
+	 * Initialize the derived feature using the
+	 * {@link #initialize()} method.
+	 * If you need to initialize for a specific method in your feature,
+	 * use this, instead of {@link #initialize()},
+	 * to ensure initialization is thread safe.
+	 * 
+	 */
+	protected void initializeFeature() {
+		// Return quickly, if initialization definitely done
+		if(!initialize) {
+			return;
+		}
+		
+		// Ensure that it is only initialized once
+		synchronized(this) {
+			if(initialize) {
+				this.initialize();
+				initialize = false;
+			}
+		}
+	}
+	
+	/**
 	 * Protected function to calculate values.
 	 * Use with getFeatureValue.
 	 * 
@@ -150,4 +178,11 @@ public abstract class BaseDerived extends BaseConfigurable implements DerivedFea
 	 * @return Computed FeatureValue
 	 */
 	abstract protected FeatureValue calcFeatureValue(Decorable di);
+	
+	/**
+	 * Protected function to initialize any parameters of a feature.
+	 * If you need to initialize for a specific method in your feature,
+	 * use {@link #initializeFeature()} to ensure initialization is thread safe.
+	 */
+	abstract protected void initialize();
 }

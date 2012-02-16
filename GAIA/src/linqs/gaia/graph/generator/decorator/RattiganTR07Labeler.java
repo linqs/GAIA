@@ -36,6 +36,7 @@ import linqs.gaia.feature.values.CategValue;
 import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.GraphItem;
 import linqs.gaia.graph.Node;
+import linqs.gaia.log.Log;
 import linqs.gaia.util.IteratorUtils;
 import linqs.gaia.util.UnmodifiableList;
 
@@ -57,6 +58,8 @@ import linqs.gaia.util.UnmodifiableList;
  * <LI> targetfeatureid-Feature id of the label feature to add.  Default is "label".
  * <LI> numlabels-Number of labels to use.  Default is 2.
  * <LI> numrandomperlabel-Number of nodes to randomly assign to each label.  Default is 1.
+ * <LI> pctrandomperlabel-Percentage of nodes to randomly assign to each label.
+ * This overrides "numrandomperlabel" if specified.  Default is to use the default "numrandomperlabel".
  * <LI> usepercent-If yes, use percent to rerank neighbors.  Default is no.
  * <LI> seed-Random number generator seed.  Default is 0.
  * </UL>
@@ -115,6 +118,12 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 		
 		if(this.hasParameter("numrandomperlabel")) {
 			this.numrandomperlabel = (int) this.getDoubleParameter("numrandomperlabel");
+		}
+		
+		if(this.hasParameter("pctrandomperlabel")) {
+			double pct = this.getDoubleParameter("pctrandomperlabel");
+			this.numrandomperlabel = (int) (g.numGraphItems(this.nodeschemaid) * pct);
+			Log.DEV(this.numrandomperlabel);
 		}
 		
 		if(this.hasParameter("usepercent", "yes")) {
@@ -234,7 +243,7 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 		
 		// Fill in for those not randomly set
 		while(!mappings.isEmpty()){
-			for(int i=0;i<numlabels;i++){				
+			for(int i=0;i<numlabels;i++){
 				ComparableNode cbdn = labelings[i].first();
 				Node n = cbdn.bdn;
 
@@ -270,16 +279,13 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 	 */
 	private void setLabel(Node n, int c, Random rand) {
 		// Set target attribute
-		//double[] probs = new double[this.numlabels];
-		//probs[c] = 1;
-		//n.setFeatureValue(this.targetfeatureid, new CategValue(""+c, probs));
 		n.setFeatureValue(this.targetfeatureid, values.get(c));
 	}
 	
 	/**
 	 * Update the rank of the neighboring nodes
 	 * 
-	 * @param n Number of nodes whose neighbors to re-rank
+	 * @param n Neighbors to re-rank
 	 * @param labelings Labeling sets
 	 * @param mappings Mapped lists
 	 */
@@ -415,6 +421,9 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 			ComparableNode other = (ComparableNode) o;
 			
 			// Sort by value, then by the object id
+			// Note that the return values are reversed
+			// since we want to maximize, not minimize,
+			// the first() call to TreeSet.
 			if(this.value<other.value){
 				return 1;
 			} else if(this.value>other.value){

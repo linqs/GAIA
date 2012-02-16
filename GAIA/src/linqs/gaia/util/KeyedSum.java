@@ -48,8 +48,8 @@ public class KeyedSum<K> implements Serializable {
 	 * Constructor
 	 */
 	public KeyedSum(){
-		sums = new LinkedHashMap<K, Double>();
-		keys = new LinkedHashSet<K>();
+		sums = Collections.synchronizedMap(new LinkedHashMap<K, Double>());
+		keys = Collections.synchronizedSet(new LinkedHashSet<K>());
 	}
 	
 	/**
@@ -60,16 +60,18 @@ public class KeyedSum<K> implements Serializable {
 	 * @param value Value to add to sum
 	 */
 	public void add(K key, double value){
-		double newsum = 0;
-		if(sums.containsKey(key)){
-			newsum = sums.get(key);
+		synchronized(this) {
+			double newsum = 0;
+			if(sums.containsKey(key)){
+				newsum = sums.get(key);
+			}
+			
+			newsum+=value;
+			sums.put(key, newsum);
+			keys.add(key);
+			totalSum+=value;
+			numsumover++;
 		}
-		
-		newsum+=value;
-		sums.put(key, newsum);
-		keys.add(key);
-		totalSum+=value;
-		numsumover++;
 	}
 	
 	/**
@@ -80,16 +82,18 @@ public class KeyedSum<K> implements Serializable {
 	 * @param value Value to subtract from sum
 	 */
 	public void subtract(K key, double value){
-		double newsum = 0;
-		if(sums.containsKey(key)){
-			newsum = sums.get(key);
+		synchronized(this) {
+			double newsum = 0;
+			if(sums.containsKey(key)){
+				newsum = sums.get(key);
+			}
+			
+			newsum-=value;
+			sums.put(key, newsum);
+			keys.add(key);
+			totalSum=totalSum-value;
+			numsumover--;
 		}
-		
-		newsum-=value;
-		sums.put(key, newsum);
-		keys.add(key);
-		totalSum=totalSum-value;
-		numsumover--;
 	}
 	
 	/**
@@ -243,10 +247,12 @@ public class KeyedSum<K> implements Serializable {
 	 * Reset sums
 	 */
 	public void clearSum(){
-		this.sums.clear();
-		this.keys.clear();
-		this.totalSum=0;
-		this.numsumover=0;
+		synchronized(this) {
+			this.sums.clear();
+			this.keys.clear();
+			this.totalSum=0;
+			this.numsumover=0;
+		}
 	}
 	
 	/**
@@ -257,9 +263,11 @@ public class KeyedSum<K> implements Serializable {
 	 * @param key Key to remove
 	 */
 	public void removeKey(K key) {
-		if(this.sums.containsKey(key)) {
-			this.sums.remove(key);
-			this.keys.remove(key);
+		synchronized(this) {
+			if(this.sums.containsKey(key)) {
+				this.sums.remove(key);
+				this.keys.remove(key);
+			}
 		}
 	}
 	

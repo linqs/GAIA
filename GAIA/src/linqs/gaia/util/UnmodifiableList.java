@@ -47,6 +47,15 @@ public class UnmodifiableList<C> implements Iterable<C>, Serializable {
 	/**
 	 * Constructor
 	 * 
+	 * @param list List to use
+	 */
+	public UnmodifiableList(UnmodifiableList<C> list) {
+		this.list = new ArrayList<C>(list.list);
+	}
+	
+	/**
+	 * Constructor
+	 * 
 	 * @param collection Collection to use
 	 */
 	public UnmodifiableList(Collection<C> collection) {

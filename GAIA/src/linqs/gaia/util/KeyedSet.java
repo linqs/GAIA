@@ -16,6 +16,7 @@
 */
 package linqs.gaia.util;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -68,9 +69,9 @@ public class KeyedSet<K,V> extends KeyedCollection<Set<V>,K,V> {
 	@Override
 	protected Set<V> createCollection() {
 		if(defaultsize==null) {
-			return new HashSet<V>();
+			return Collections.synchronizedSet(new HashSet<V>());
 		} else {
-			return new HashSet<V>(this.defaultsize);
+			return Collections.synchronizedSet(new HashSet<V>(this.defaultsize));
 		}
 	}
 }

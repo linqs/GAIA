@@ -16,9 +16,11 @@
 */
 package linqs.gaia.graph.statistic;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.exception.UnsupportedTypeException;
@@ -32,6 +34,7 @@ import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.GraphItem;
 import linqs.gaia.graph.Node;
 import linqs.gaia.util.KeyedCount;
+import linqs.gaia.util.KeyedList;
 import linqs.gaia.util.MapUtils;
 
 /**
@@ -97,20 +100,38 @@ public class ComponentCount extends BaseConfigurable implements GraphStatistic {
 			// Increment counter
 			componentcount++;
 			
-			// Set this component ID to node and all connected to this node
-			this.recursivelySetcomponentID(n, fid, componentcount);
+			Set<GraphItem> toprocess = new HashSet<GraphItem>();
+			toprocess.add(n);
+			while(!toprocess.isEmpty()) {
+				GraphItem gi = toprocess.iterator().next();
+				toprocess.remove(gi);
+				if(this.hasFeature(gi, fid)) {
+					continue;
+				}
+				
+				gi.setFeatureValue(fid, new NumValue(componentcount));
+				Iterator<GraphItem> itr = gi.getIncidentGraphItems();
+				while(itr.hasNext()) {
+					GraphItem currgi = itr.next();
+					if(!toprocess.contains(currgi)) {
+						toprocess.add(currgi);
+					}
+				}
+			}
 		}
 		
 		Map<String, Double> stats = new LinkedHashMap<String, Double>();
 		KeyedCount<String> nodeccount = new KeyedCount<String>();
 		KeyedCount<String> edgeccount = new KeyedCount<String>();
-		
+		KeyedList<Integer,Node> id2nodes = new KeyedList<Integer,Node>();
 		// Count nodes in a given component
 		nodes = g.getNodes();
 		while(nodes.hasNext()) {
 			Node n = nodes.next();
 			int id = ((NumValue) n.getFeatureValue(fid)).getNumber().intValue();
 			nodeccount.increment(id+"");
+			
+			id2nodes.addItem(id, n);
 		}
 		
 		// Count edges in a given component
@@ -151,28 +172,6 @@ public class ComponentCount extends BaseConfigurable implements GraphStatistic {
 		}
 		
 		return stats;
-	}
-	
-	/**
-	 * Set the graph item with the component ID and
-	 * then call this same function over all items connected
-	 * to the graph item.
-	 * 
-	 * @param gi Graph Item
-	 * @param fid Component feature id
-	 * @param componentid Current component id
-	 */
-	private void recursivelySetcomponentID(GraphItem gi, String fid, double componentid) {
-		if(this.hasFeature(gi, fid)) {
-			return;
-		}
-		
-		gi.setFeatureValue(fid, new NumValue(componentid));
-		Iterator<GraphItem> itr = gi.getIncidentGraphItems();
-		while(itr.hasNext()) {
-			GraphItem currgi = itr.next();
-			this.recursivelySetcomponentID(currgi, fid, componentid);
-		}
 	}
 	
 	/**

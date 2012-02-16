@@ -16,7 +16,7 @@
 */
 package linqs.gaia.graph.datagraph.feature.explicit;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.exception.InvalidAssignmentException;
 import linqs.gaia.feature.CategFeature;
@@ -29,13 +29,13 @@ import linqs.gaia.util.UnmodifiableList;
 
 public class DGExplicitCateg extends ExplicitCateg implements CategFeature, DGExplicitFeature {
 	private ExplicitCateg ec = null;
-	private HashMap<Integer, CategValue> id2value;
+	private ConcurrentHashMap<Integer, CategValue> id2value;
 	
-	private HashMap<CategValue, CategValue> catvalue2catvalue;
+	private ConcurrentHashMap<CategValue, CategValue> catvalue2catvalue;
 	
 	public DGExplicitCateg(ExplicitCateg ec) {
 		super(ec.getAllCategories());
-		this.id2value = new HashMap<Integer,CategValue>();
+		this.id2value = new ConcurrentHashMap<Integer,CategValue>();
 		this.ec = ec;
 		
 		// Handle categorical values where the prob is set to null
@@ -51,7 +51,7 @@ public class DGExplicitCateg extends ExplicitCateg implements CategFeature, DGEx
 			}
 		}
 		
-		this.catvalue2catvalue = new HashMap<CategValue, CategValue>();
+		this.catvalue2catvalue = new ConcurrentHashMap<CategValue, CategValue>();
 		
 		// Store a categorical value for categorical values
 		// of this feature where the probability is 1 for the

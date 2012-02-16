@@ -46,6 +46,8 @@ import linqs.gaia.graph.Node;
  *
  */
 public class AdjacentCount  extends DerivedNum {
+	String schemaid = null;
+	
 	public FeatureValue calcFeatureValue(Decorable di) {
 		if(!(di instanceof GraphItem)) {
 			throw new UnsupportedTypeException("Feature only defined for Graph Items: "
@@ -91,5 +93,9 @@ public class AdjacentCount  extends DerivedNum {
 		df.copyParameters(this);
 		
 		return df;
+	}
+	
+	protected void initialize() {
+		// Do nothing
 	}
 }

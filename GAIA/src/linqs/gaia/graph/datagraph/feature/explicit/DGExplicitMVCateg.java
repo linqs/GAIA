@@ -16,8 +16,8 @@
 */
 package linqs.gaia.graph.datagraph.feature.explicit;
 
-import java.util.HashMap;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.exception.InvalidAssignmentException;
 import linqs.gaia.feature.ExplicitFeature;
@@ -31,12 +31,12 @@ import linqs.gaia.util.UnmodifiableList;
 
 public class DGExplicitMVCateg extends ExplicitMultiCateg implements MultiCategFeature, DGExplicitFeature {
 	private ExplicitMultiCateg emvc = null;
-	private HashMap<Integer,SimplePair<Set<String>,double[]>> id2value;
+	private ConcurrentHashMap<Integer,SimplePair<Set<String>,double[]>> id2value;
 	
 	public DGExplicitMVCateg(ExplicitMultiCateg emvc) {
 		super(emvc.getAllCategories());
 		
-		this.id2value = new HashMap<Integer,SimplePair<Set<String>,double[]>>();
+		this.id2value = new ConcurrentHashMap<Integer,SimplePair<Set<String>,double[]>>();
 		this.emvc = emvc;
 	}
 

@@ -80,4 +80,9 @@ public class GroovyNum extends DerivedNum {
 		
 		return df;
 	}
+	
+	@Override
+	protected void initialize() {
+		// Do nothing;		
+	}
 }

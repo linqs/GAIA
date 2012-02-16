@@ -54,14 +54,12 @@ import linqs.gaia.util.IteratorUtils;
 public class Incident extends Neighbor {
 	private static final long serialVersionUID = 1L;
 	
-	private boolean initialize = true;
 	private boolean unique = false;
 	private boolean includeself = false;
 	private String incidentsid = null;
 	private int dirtype = 3;
 	
-	private void initialize() {
-		initialize = false;
+	protected void initialize() {
 		unique = this.hasYesNoParameter("unique","yes");
 		includeself = this.hasYesNoParameter("includeself","yes");
 		if(this.hasParameter("incidentsid")) {
@@ -84,10 +82,6 @@ public class Incident extends Neighbor {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Iterable<GraphItem> calcNeighbors(GraphItem gi) {
-		if(initialize) {
-			this.initialize();
-		}
-		
 		Collection<GraphItem> deps = null;
 		
 		if(unique) {

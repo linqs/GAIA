@@ -43,19 +43,14 @@ import linqs.gaia.graph.Node;
  *
  */
 public class IncidentCount  extends DerivedNum {
-	boolean initialize = true;
 	String schemaid = null;
-	private void initialize() {
+	protected void initialize() {
 		if(this.hasParameter("schemaid")) {
 			schemaid = this.getStringParameter("schemaid");
 		}
 	}
 	
-	public FeatureValue calcFeatureValue(Decorable di) {	
-		if(initialize) {
-			this.initialize();
-		}
-		
+	public FeatureValue calcFeatureValue(Decorable di) {		
 		int degree = -1;
 		if(di instanceof Node) {
 			degree = schemaid==null ? ((Node) di).numEdges() : ((Node) di).numIncidentGraphItems(schemaid);
