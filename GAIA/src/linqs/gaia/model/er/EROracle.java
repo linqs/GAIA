@@ -30,19 +30,31 @@ import linqs.gaia.feature.schema.SchemaType;
 import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.Node;
+import linqs.gaia.graph.SystemDataManager;
+import linqs.gaia.graph.io.IO;
 import linqs.gaia.graph.registry.GraphRegistry;
 import linqs.gaia.identifiable.GraphID;
 import linqs.gaia.model.lp.LinkPredictor;
 import linqs.gaia.model.util.plg.PotentialLinkGenerator;
+import linqs.gaia.util.Dynamic;
 import linqs.gaia.util.FileIO;
 
 /**
  * For use as a baseline.  It's a "perfect" entity resolver.
- * The model is able to perfectly resolve nodes by looking
- * at the value for these nodes as stored in a system data entry for that node,
- * where the string value is a comma delimited list of the entities a node corresponds to,
- * or by looking at the specified output graph.
- * In cases where a reference node is mapped to more than one entity,
+ * The model is able to perfectly resolve nodes by loading the ground truth.
+ * The ground truth is made available to this baseline in one of two ways.
+ * The first way is by storing a value in the graph system data
+ * (available through the interface {@link SystemDataManager})
+ * keyed by the ID of the node.  All nodes with the same returned value
+ * from system data is predicted as co-referent.
+ * The alternate way to load the ground truth is to load a graph
+ * which has the ground truth in the form of "refers-to"
+ * edges from the references to an entity node.
+ * References with "refers-to" edges to a node in common are predicted co-referent.
+ * The graph is either loaded from the {@link GraphRegistry} keyed
+ * by its Graph ID or via an {@link IO} object.
+ * <p>
+ * Note: In cases where a reference node is mapped to more than one entity,
  * if at least one entity matches given two references, they belong to the same entity.
  * 
  * Optional Parameters:
@@ -50,14 +62,20 @@ import linqs.gaia.util.FileIO;
  * <LI> ersdkey-System data key for entity value.
  * The system data is assumed to exist for each node where the string
  * value is a comma delimited list of entity identifiers.
- * Either outputgraphid or ersdkey must be specified.
- * <LI> outputgraphid-String representation of the output graph id where
+ * Either ersdkey, entitygraphid, or entitygraphio must be specified.
+ * Order of precedence, if multiple are specified, is: ersdkey, entitygraphid, entitygraphio.
+ * <LI> entitygraphid-String representation of the graph id of the graph where
  * the reference nodes are specified with refers-to edges to their entities.
  * If specified, a graph with this graph ID must be registered in {@link GraphRegistry} or
- * an exception will be thrown.
- * Either outputgraphid or ersdkey must be specified.
- * Requires referstosid to be specified.
- * <LI> referstosid-The schema id of the "refers-to" in output graph.
+ * an exception will be thrown. Requires referstosid to be specified.
+ * Either ersdkey, entitygraphid, or entitygraphio must be specified.
+ * Order of precedence, if multiple are specified, is: ersdkey, entitygraphid, entitygraphio.
+ * <LI> entitygraphio-Class for the {@link IO} to instantiate using
+ * {@link Dynamic#forConfigurableName} for loading a graph with
+ * entity resolution annotations.  Requires referstosid to be specified.
+ * Either ersdkey, entitygraphid, or entitygraphio must be specified.
+ * Order of precedence, if multiple are specified, is: ersdkey, entitygraphid, entitygraphio.
+ * <LI> referstosid-The schema id of the "refers-to" edges in entity graph.
  * </UL>
  * 
  * @see linqs.gaia.util.Dynamic#forConfigurableName(Class, String)
@@ -69,10 +87,11 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 	private String edgeschemaid;
 	
 	private String ersdkey;
-	private GraphID outputgraphid;
+	private GraphID entitygraphid;
 	private String referstosid;
 	private String refschemaid;
 	private boolean initialize = true;
+	private String entitygraphio;
 	
 	public void learn(Graph graph, String refschemaid, String edgeschemaid,
 			PotentialLinkGenerator generator) {
@@ -102,22 +121,32 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 		
 		if(this.hasParameter("ersdkey")) {
 			this.ersdkey = this.getStringParameter("ersdkey");
-		}
-		
-		if(this.hasParameter("outputgraphid")) {
-			this.outputgraphid = GraphID.parseGraphID(this.getStringParameter("outputgraphid"));
+		} else if(this.hasParameter("entitygraphid")) {
+			this.entitygraphid = GraphID.parseGraphID(this.getStringParameter("entitygraphid"));
+			this.referstosid = this.getStringParameter("referstosid");
+		} else if(this.hasParameter("entitygraphio")) {
+			entitygraphio = this.getStringParameter("entitygraphio");
 			this.referstosid = this.getStringParameter("referstosid");
 		}
 	}
 
 	public void predictAsLink(Graph graph, PotentialLinkGenerator generator) {
+		if(initialize) {
+			this.initialize(refschemaid, edgeschemaid);
+		}
+		
 		if(!graph.hasSchema(this.edgeschemaid)) {
 			graph.addSchema(this.edgeschemaid, new Schema(SchemaType.UNDIRECTED));
 		}
 		
-		Graph outputgraph = null;
-		if(outputgraphid!=null) {
-			outputgraph = GraphRegistry.getGraph(outputgraphid);
+		Graph entitygraph = null;
+		if(entitygraphid!=null) {
+			entitygraph = GraphRegistry.getGraph(entitygraphid);
+		} else if(entitygraphio!=null) {
+			IO io = (IO) Dynamic.forConfigurableName(IO.class,
+					this.getStringParameter("entitygraphio"),
+					this);
+			entitygraph = io.loadGraph();
 		}
 		
 		// Go through all positive edges.  Remove those which are not between the same entity.
@@ -132,8 +161,8 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 			
 			// Check to see if one of the comma delimited entity strings
 			// match for both nodes
-			List<String> n1eids = this.getEntityIDs(graph, outputgraph, n1);
-			List<String> n2eids = this.getEntityIDs(graph, outputgraph, n2);
+			List<String> n1eids = this.getEntityIDs(graph, entitygraph, n1);
+			List<String> n2eids = this.getEntityIDs(graph, entitygraph, n2);
 			
 			boolean issameentity = false;
 			for(String n1eid:n1eids) {
@@ -158,6 +187,10 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 	
 	public void predictAsLink(Graph graph, PotentialLinkGenerator generator,
 			boolean removenotexist, String existfeature) {
+		if(initialize) {
+			this.initialize(refschemaid, edgeschemaid);
+		}
+		
 		// Add schema, if not already defined
 		if(!graph.hasSchema(this.edgeschemaid)) {
 			graph.addSchema(this.edgeschemaid, new Schema(SchemaType.UNDIRECTED));
@@ -170,9 +203,14 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 			graph.updateSchema(this.edgeschemaid, schema);
 		}
 		
-		Graph outputgraph = null;
-		if(outputgraphid!=null) {
-			outputgraph = GraphRegistry.getGraph(outputgraphid);
+		Graph entitygraph = null;
+		if(entitygraphid!=null) {
+			entitygraph = GraphRegistry.getGraph(entitygraphid);
+		} else if(entitygraphio!=null) {
+			IO io = (IO) Dynamic.forConfigurableName(IO.class,
+					this.getStringParameter("entitygraphio"),
+					this);
+			entitygraph = io.loadGraph();
 		}
 		
 		// Go through all positive edges.  Remove those which are not between the same entity.
@@ -187,8 +225,8 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 			
 			// Check to see if one of the comma delimited entity strings
 			// match for both nodes
-			List<String> n1eids = this.getEntityIDs(graph, outputgraph, n1);
-			List<String> n2eids = this.getEntityIDs(graph, outputgraph, n2);
+			List<String> n1eids = this.getEntityIDs(graph, entitygraph, n1);
+			List<String> n2eids = this.getEntityIDs(graph, entitygraph, n2);
 			
 			boolean issameentity = false;
 			for(String n1eid:n1eids) {
@@ -219,6 +257,10 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 	
 	public void predictAsLink(Graph graph, Iterable<Edge> unknownedges,
 			boolean removenotexist, String existfeature) {
+		if(initialize) {
+			this.initialize(refschemaid, edgeschemaid);
+		}
+		
 		// Add schema, if not already defined
 		if(!graph.hasSchema(this.edgeschemaid)) {
 			graph.addSchema(this.edgeschemaid, new Schema(SchemaType.UNDIRECTED));
@@ -231,9 +273,14 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 			graph.updateSchema(this.edgeschemaid, schema);
 		}
 		
-		Graph outputgraph = null;
-		if(outputgraphid!=null) {
-			outputgraph = GraphRegistry.getGraph(outputgraphid);
+		Graph entitygraph = null;
+		if(entitygraphid!=null) {
+			entitygraph = GraphRegistry.getGraph(entitygraphid);
+		} else if(entitygraphio!=null) {
+			IO io = (IO) Dynamic.forConfigurableName(IO.class,
+					this.getStringParameter("entitygraphio"),
+					this);
+			entitygraph = io.loadGraph();
 		}
 		
 		// Go through all positive edges.  Remove those which are not between the same entity.
@@ -245,8 +292,8 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 			
 			// Check to see if one of the comma delimited entity strings
 			// match for both nodes
-			List<String> n1eids = this.getEntityIDs(graph, outputgraph, n1);
-			List<String> n2eids = this.getEntityIDs(graph, outputgraph, n2);
+			List<String> n1eids = this.getEntityIDs(graph, entitygraph, n1);
+			List<String> n2eids = this.getEntityIDs(graph, entitygraph, n2);
 			
 			boolean issameentity = false;
 			for(String n1eid:n1eids) {
@@ -275,14 +322,14 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 		}		
 	}
 	
-	private List<String> getEntityIDs(Graph graph, Graph outputgraph, Node n) {
+	private List<String> getEntityIDs(Graph graph, Graph entitygraph, Node n) {
 		List<String> eids = null;
 		if(ersdkey!=null) {
 			// Assume that the string representation of the entity is in system data
 			eids = Arrays.asList(graph.getSystemData(n.getID(), this.ersdkey).split(","));
-		} else if(outputgraph!=null) {
-			// Get the entity information from the output graph
-			Node equivn = (Node) outputgraph.getEquivalentGraphItem(n.getID());
+		} else if(entitygraph!=null) {
+			// Get the entity information from the entity graph
+			Node equivn = (Node) entitygraph.getEquivalentGraphItem(n.getID());
 			Iterator<Node> nitr = equivn.getAdjacentTargets(referstosid);
 			eids = new ArrayList<String>();
 			while(nitr.hasNext()) {
@@ -293,7 +340,7 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 				throw new InvalidStateException("All entities must have at least one reference");
 			}
 		} else {
-			throw new ConfigurationException("Neither an ersdkey or an outputgraphid was provided");
+			throw new ConfigurationException("Neither an ersdkey, entitygraphid, or entitygraphio was provided");
 		}
 		
 		return eids;
@@ -301,12 +348,20 @@ public class EROracle extends BaseConfigurable implements EntityResolution {
 	
 	public void predictAsNode(Graph graph, PotentialLinkGenerator generator,
 			String entitysid, String referstosid) {
+		if(initialize) {
+			this.initialize(refschemaid, edgeschemaid);
+		}
+		
 		this.predictAsLink(graph, generator);
 		ERUtils.addEntityNodesFromCoRef(graph, graph, edgeschemaid, entitysid, refschemaid, referstosid, null, true);
 	}
 	
 	public void predictAsNode(Graph refgraph, Graph entitygraph, PotentialLinkGenerator generator,
 			String entitysid, String reffeatureid) {
+		if(initialize) {
+			this.initialize(refschemaid, edgeschemaid);
+		}
+		
 		this.predictAsLink(refgraph, generator);
 		ERUtils.addEntityNodesFromCoRef(refgraph, entitygraph, edgeschemaid, entitysid, refschemaid, null, reffeatureid, true);
 	}
