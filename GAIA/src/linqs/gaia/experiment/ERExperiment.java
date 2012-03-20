@@ -17,7 +17,9 @@
 package linqs.gaia.experiment;
 
 import java.util.Map;
+import java.util.Iterator;
 
+import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.GraphUtils;
 import linqs.gaia.graph.io.DirectoryBasedIO;
@@ -26,6 +28,9 @@ import linqs.gaia.graph.io.SparseTabDelimIO;
 import linqs.gaia.log.Log;
 import linqs.gaia.model.er.EntityResolution;
 import linqs.gaia.model.util.plg.PotentialLinkGenerator;
+import linqs.gaia.prediction.PredictionGroup;
+import linqs.gaia.prediction.existence.ExistencePred;
+import linqs.gaia.prediction.existence.ExistencePredGroup;
 import linqs.gaia.prediction.statistic.Statistic;
 import linqs.gaia.prediction.statistic.StatisticUtils;
 import linqs.gaia.util.Dynamic;
@@ -92,10 +97,32 @@ public class ERExperiment extends Experiment {
 				predio.setParameter(prefix+"filedirectory",
 						this.getStringParameter(prefix+"filedirectory"));
 			}
+			
+			Log.DEBUG("Tried saving prediction graph");
 
 			predio.saveGraph(graph);
 		}
 
+		
+		// evaluate prediction
+	
+		// count number of potential edges
+		Iterator<Edge> edgeCounter = generator.getLinksIteratively(graph, edgeschemaid);
+		int potentialEdges = 0;
+		while (edgeCounter.hasNext()) {
+			edgeCounter.next();
+			potentialEdges++;
+		}
+		
+		Log.DEBUG("Counted " + potentialEdges + " possible coreference edges using " + this.getStringParameter("linkgenerator"));
+		
+		ExistencePredGroup epg = new ExistencePredGroup(potentialEdges, graph.numEdges());
+		
+		Iterator<Edge> corefEdges = graph.getEdges(edgeschemaid);
+		
+		while (corefEdges.hasNext()) {
+			epg.addPrediction(new ExistencePred("coreferent"));
+		}
 		
 		
 	}
@@ -111,12 +138,13 @@ public class ERExperiment extends Experiment {
 		
 		exp.setParameter("linkgenerator", "lg:linqs.gaia.model.util.plg.AllPairwise");
 		exp.setParameter("nodeschemaid", "author");
-
-		exp.setParameter("entityresolver", "er:linqs.gaia.model.er.EROracle");
+	
+		exp.setParameter("entityresolver", "er:linqs.gaia.model.er.ERNullModel");
 		exp.setParameter("refschemaid", "author");
 		exp.setParameter("edgeschemaid", "coauthor");
-		exp.setParameter("ersdkey", "author_cluster_id");
-		
+	
+		exp.setParameter("predioclass", "predio:linqs.gaia.graph.io.TabDelimIO");
+		exp.setParameter("filedirectory", "SampleSave");
 		
 		exp.runExperiment();
 		
