@@ -16,31 +16,63 @@
  */
 package linqs.gaia.experiment;
 
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Iterator;
 
+import linqs.gaia.exception.ConfigurationException;
+import linqs.gaia.exception.UnsupportedTypeException;
+import linqs.gaia.feature.schema.Schema;
 import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.GraphUtils;
+import linqs.gaia.graph.Node;
 import linqs.gaia.graph.io.DirectoryBasedIO;
 import linqs.gaia.graph.io.IO;
 import linqs.gaia.graph.io.SparseTabDelimIO;
 import linqs.gaia.log.Log;
 import linqs.gaia.model.er.EntityResolution;
 import linqs.gaia.model.util.plg.PotentialLinkGenerator;
-import linqs.gaia.prediction.PredictionGroup;
 import linqs.gaia.prediction.existence.ExistencePred;
 import linqs.gaia.prediction.existence.ExistencePredGroup;
 import linqs.gaia.prediction.statistic.Statistic;
-import linqs.gaia.prediction.statistic.StatisticUtils;
 import linqs.gaia.util.Dynamic;
+import linqs.gaia.util.SimpleTimer;
 
+
+/**
+ * Experiment for running within-network entity resolution
+ * <p>
+ * Note: This experiment has the default configuration id of "exp".
+ * <p>
+ * Required Parameters:
+ * <UL>
+ * <LI> refschemaid - schema id for the references to be resolved
+ * <LI> corefschemaid - schema id for the coreference relation
+ * <LI> inputioclass - IO class from linqs.gaia.graph.io name for input
+ * <LI> inputdirectory - directory to read input graph files
+ * <LI> entityresolver - class from linqs.gaia.model.er used to resolve entities
+ * <LI> linkgenerator - class from linqs.gaia.model.util.plg to determine which coreference pairs are possible (e.g., blocking)
+ * </UL>
+ * Optional parameters:
+ * <UL>
+ * <LI> savemodelfile - filename to save learned ER model
+ * <LI> loadmodelfile - filename of previously learned ER model
+ * <LI> predioclass - IO class from linqs.gaia.graph.io to save predicted graph
+ * <LI> statistics - comma delimited list of statistic classes from linqs.gaia.prediction.statistic to compute on predicted graph
+ * </UL>
+ * 
+ * @see linqs.gaia.util.Dynamic#forConfigurableName(Class, String)
+ * @author bert
+ *
+ */
 
 public class ERExperiment extends Experiment {
 	private String refschemaid = null;
-	private String edgeschemaid = null;
+	private String corefschemaid = null;
 	private String savemodelfile = null;
 	private String loadmodelfile = null;
+	private List<Statistic> statistics;
 	
 	@Override
 	public void runExperiment() {
@@ -50,7 +82,7 @@ public class ERExperiment extends Experiment {
 
 		// load config options
 		refschemaid = this.getStringParameter("refschemaid");
-		edgeschemaid = this.getStringParameter("edgeschemaid");
+		corefschemaid = this.getStringParameter("corefschemaid");
 		
 		if (this.hasParameter("savemodelfile"))
 			savemodelfile = this.getStringParameter("savemodelfile");
@@ -74,10 +106,8 @@ public class ERExperiment extends Experiment {
 
 		// Train classifier
 		if(this.loadmodelfile==null) {
-			Log.DEBUG("Training classifier");
-			er.learn(graph, refschemaid, edgeschemaid, generator);
+			er.learn(graph, refschemaid, corefschemaid, generator);
 		} else {
-			Log.DEBUG("Loading saved classifier");
 			er.loadModel(this.loadmodelfile);
 		}
 		
@@ -85,7 +115,16 @@ public class ERExperiment extends Experiment {
 			er.saveModel(this.savemodelfile);
 		}
 	
-		er.predictAsLink(graph, generator);
+		Schema coref = graph.getSchema(corefschemaid);
+		Graph predGraph = graph.copy("predictedGraph");
+		
+		predGraph.removeSchema(corefschemaid);
+		predGraph.addSchema(corefschemaid, coref);
+		
+		er.predictAsLink(predGraph, generator);
+		
+		Log.INFO("Predicted graph:");
+		Log.INFO(GraphUtils.getSimpleGraphOverview(predGraph));
 		
 		// Saved the predicted graph
 		if(this.hasParameter("predioclass")) {
@@ -98,55 +137,84 @@ public class ERExperiment extends Experiment {
 						this.getStringParameter(prefix+"filedirectory"));
 			}
 			
-			Log.DEBUG("Tried saving prediction graph");
-
 			predio.saveGraph(graph);
 		}
 
-		
 		// evaluate prediction
-	
-		// count number of potential edges
-		Iterator<Edge> edgeCounter = generator.getLinksIteratively(graph, edgeschemaid);
-		int potentialEdges = 0;
-		while (edgeCounter.hasNext()) {
-			edgeCounter.next();
-			potentialEdges++;
+				
+		ExistencePredGroup epg = new ExistencePredGroup(graph.numNodes()*(graph.numNodes()-1)/2, graph.numGraphItems(corefschemaid));
+		
+		Iterator<Edge> itr = predGraph.getEdges(corefschemaid);
+		
+		int truePos = 0, falsePos = 0;
+		
+		while (itr.hasNext()) {
+			Edge e = itr.next();
+			
+			if(e.numNodes()!=2) {
+				throw new UnsupportedTypeException("Only binary edges supported");
+			}
+			
+			Iterator<Node> nodeIter = e.getAllNodes();
+			
+			Node n1 = (Node) graph.getEquivalentGraphItem(nodeIter.next());
+			Node n2 = (Node) graph.getEquivalentGraphItem(nodeIter.next());
+			
+			ExistencePred pred = new ExistencePred(e.getID().toString(), 
+					n1.isAdjacent(n2, corefschemaid) ? ExistencePredGroup.EXIST : ExistencePredGroup.NOTEXIST);
+			epg.addPrediction(pred);
+			
+			if (n1.isAdjacent(n2, corefschemaid))
+				truePos++;
+			else
+				falsePos++;
+		}
+				
+		Log.DEBUG("True pos: " + truePos + ", false pos: " + falsePos);
+		
+		// compute statistics
+
+		// Load set of requested statistics
+		String statparam = null;
+		if(this.hasParameter("statistics")) {
+			statparam = this.getStringParameter("statistics");
+		}
+		String[] statclasses = statparam.split(",");
+
+		statistics = new LinkedList<Statistic>();
+		
+		for(String statclass:statclasses) {
+			Log.DEBUG(statclass);
+			Statistic stat = (Statistic) Dynamic.forConfigurableName(Statistic.class, statclass);
+			stat.copyParameters(this);
+			statistics.add(stat);
 		}
 		
-		Log.DEBUG("Counted " + potentialEdges + " possible coreference edges using " + this.getStringParameter("linkgenerator"));
-		
-		ExistencePredGroup epg = new ExistencePredGroup(potentialEdges, graph.numEdges());
-		
-		Iterator<Edge> corefEdges = graph.getEdges(edgeschemaid);
-		
-		while (corefEdges.hasNext()) {
-			epg.addPrediction(new ExistencePred("coreferent"));
+		// Get split statistics
+		Log.INFO("Statistics: ");
+		for(Statistic stat: statistics) {
+			String statstring = stat.getStatisticString(epg);
+			Log.INFO("Statistic string: "+statstring);
 		}
-		
-		
+				
 	}
 
 
 	public static void main(String[] args) throws Exception {
 		
+		if(args.length != 1) {
+			throw new ConfigurationException("Arguments: <configfile>");
+		}
+		
 		ERExperiment exp = new ERExperiment();
 
-		exp.setParameter("inputioclass", "io:linqs.gaia.graph.io.TabDelimIO");
-		exp.setParameter("inputdirectory", "resource/citeseer");
-		exp.setParameter("outputdirectory", "SampleSave");
-		
-		exp.setParameter("linkgenerator", "lg:linqs.gaia.model.util.plg.AllPairwise");
-		exp.setParameter("nodeschemaid", "author");
-	
-		exp.setParameter("entityresolver", "er:linqs.gaia.model.er.ERNullModel");
-		exp.setParameter("refschemaid", "author");
-		exp.setParameter("edgeschemaid", "coauthor");
-	
-		exp.setParameter("predioclass", "predio:linqs.gaia.graph.io.TabDelimIO");
-		exp.setParameter("filedirectory", "SampleSave");
+		SimpleTimer timer = new SimpleTimer();
+		exp.loadParametersFile(args[0]);
 		
 		exp.runExperiment();
+
+		Log.INFO("Splitting Runtime: "+timer.timeLapse(true)+"\t"+timer.timeLapse(false));
+		
 		
 	}
 

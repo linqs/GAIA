@@ -17,8 +17,13 @@
 package linqs.gaia.model.util.plg;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.Stack;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.exception.ConfigurationException;
@@ -28,6 +33,7 @@ import linqs.gaia.feature.schema.SchemaType;
 import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.Node;
+import linqs.gaia.identifiable.GraphID;
 import linqs.gaia.identifiable.GraphItemID;
 import linqs.gaia.util.BaseIterator;
 import linqs.gaia.util.KeyedList;
@@ -52,19 +58,21 @@ import linqs.gaia.util.KeyedList;
  * <LI> allowselflinks-If "yes", allow self links (i.e., allow node to link to self).  Default is "no".
  * <LI> allowduplinks-If "yes", allow duplicate links (i.e., create edges between two nodes
  * even if they are already adjacent given the specified edge schema id).  Default is "no".
+ * <LI> prefixlength-for String features, number of characters to block by
  * </UL>
  * 
  * 
- * @author namatag
+ * @author namatag, bert
  *
  */
-public class BlockedPairs extends BaseConfigurable implements PotentialLinkGenerator {
+public class BlockedPairs extends BaseConfigurable implements PotentialLinkGenerator,NodeCentricPLG {
 	private boolean initialize = true;
 	private String blockfid;
 	private String nodeschemaid;
 	private boolean allowselflinks;
 	private boolean allowduplinks;
-	
+	private int prefixLength;
+
 	public Iterator<Edge> getLinksIteratively(Graph g, String edgeschemaid) {
 		if(initialize) {
 			this.initialize();
@@ -81,6 +89,29 @@ public class BlockedPairs extends BaseConfigurable implements PotentialLinkGener
 			// Check to see if the feature for the bin value is specified
 			checkForBinFeature(g, nodeschemaid);
 			return new UndirectedIterator(g, edgeschemaid);
+		} else {
+			throw new UnsupportedTypeException("Unsupported edge type: "+edgeschemaid+" is "+type);
+		}
+	}
+	
+	
+
+	public Iterator<Edge> getLinksIteratively(Graph g, Node n, String edgeschemaid) {
+		if(initialize) {
+			this.initialize();
+		}
+		
+		SchemaType type = g.getSchemaType(edgeschemaid);
+		
+		// Return existing edges matching some criterion
+		if(type.equals(SchemaType.DIRECTED)) {
+			// Check to see if the feature for the bin value is specified
+			checkForBinFeature(g, nodeschemaid);
+			return new DirectedNodeIterator(g, n, edgeschemaid);
+		} else if(type.equals(SchemaType.UNDIRECTED)) {
+			// Check to see if the feature for the bin value is specified
+			checkForBinFeature(g, nodeschemaid);
+			return new UndirectedNodeIterator(g, n, edgeschemaid);
 		} else {
 			throw new UnsupportedTypeException("Unsupported edge type: "+edgeschemaid+" is "+type);
 		}
@@ -117,6 +148,8 @@ public class BlockedPairs extends BaseConfigurable implements PotentialLinkGener
 			while(nitr.hasNext()) {
 				Node n = nitr.next();
 				String bin = n.getFeatureValue(blockfid).getStringValue();
+				if (prefixLength > 0 && bin.length() > prefixLength)
+					bin = bin.substring(0, prefixLength-1);
 				bin2nodes.addItem(bin, n);
 			}
 			
@@ -180,6 +213,76 @@ public class BlockedPairs extends BaseConfigurable implements PotentialLinkGener
 		}
 	}
 	
+	private class DirectedNodeIterator extends BaseIterator<Edge> {
+		private Graph g;
+		private Node myNode;
+		private String edgeschemaid;
+		private List<Node> currbin;
+		private Iterator<Node> niter;
+		private String binkey;
+		private boolean done = false;
+		private boolean outgoing = true;
+		private Node neighbor;
+		
+		public DirectedNodeIterator(Graph g, Node node, String edgeschemaid) {
+			this.g = g;
+			this.myNode = node;
+			this.edgeschemaid = edgeschemaid;
+			this.currbin = new ArrayList<Node>();
+			this.binkey = node.getFeatureValue(blockfid).getStringValue();
+			if (prefixLength > 0 && this.binkey.length() > prefixLength)
+				this.binkey = this.binkey.substring(0, prefixLength-1);
+			
+			Iterator<Node> nitr = this.g.getNodes(nodeschemaid);
+			while(nitr.hasNext()) {
+				Node n = nitr.next();
+				String bin = n.getFeatureValue(blockfid).getStringValue();
+				if (prefixLength > 0 && bin.length() > prefixLength)
+					bin = bin.substring(0, prefixLength-1);
+				
+				if (bin.equals(binkey))
+					currbin.add(n);
+			}
+			
+			this.niter = currbin.iterator();
+			outgoing = true;
+		}
+		
+		@Override
+		public Edge getNext() {
+			Edge nextedge = null;
+			while(true) {
+				boolean isvalid = true;			
+				// Iterator has reached its end
+				if(done) 
+					return null;
+				// Check pair
+				
+				if (outgoing)
+					neighbor = niter.next();
+				
+				// Check pair
+				if(!allowselflinks && myNode.equals(neighbor)) 
+					isvalid = false;
+				 else if(!allowduplinks && (outgoing && myNode.isAdjacentTarget(neighbor, edgeschemaid)) ||
+						 (!outgoing && myNode.isAdjacentSource(neighbor, edgeschemaid))) 
+					isvalid = false;
+				// Add edge
+				if(isvalid) {
+					if (outgoing)
+						nextedge = g.addDirectedEdge(GraphItemID.generateGraphItemID(g, edgeschemaid),
+								myNode, neighbor);
+					else
+						nextedge = g.addDirectedEdge(GraphItemID.generateGraphItemID(g, edgeschemaid),
+								neighbor, myNode);
+					break;
+				}
+			}
+			
+			return nextedge;
+		}
+	}
+	
 	private class UndirectedIterator extends BaseIterator<Edge> {
 		private Graph g;
 		private String edgeschemaid;
@@ -199,6 +302,8 @@ public class BlockedPairs extends BaseConfigurable implements PotentialLinkGener
 			while(nitr.hasNext()) {
 				Node n = nitr.next();
 				String bin = n.getFeatureValue(blockfid).getStringValue();
+				if (prefixLength > 0 && bin.length() > prefixLength)
+					bin = bin.substring(0, prefixLength-1);
 				bin2nodes.addItem(bin, n);
 			}
 			
@@ -270,6 +375,65 @@ public class BlockedPairs extends BaseConfigurable implements PotentialLinkGener
 		}
 	}
 	
+	private class UndirectedNodeIterator extends BaseIterator<Edge> {
+		private Graph g;
+		private Node myNode;
+		private String edgeschemaid;
+		private List<Node> currbin;
+		private Iterator<Node> niter;
+		private String binkey;
+		private boolean done = false;
+		
+		public UndirectedNodeIterator(Graph g, Node node, String edgeschemaid) {
+			this.g = g;
+			this.myNode = node;
+			this.edgeschemaid = edgeschemaid;
+			this.currbin = new ArrayList<Node>();
+			this.binkey = node.getFeatureValue(blockfid).getStringValue();
+			if (prefixLength > 0 && this.binkey.length() > prefixLength)
+				this.binkey = this.binkey.substring(0, prefixLength-1);
+			
+			Iterator<Node> nitr = this.g.getNodes(nodeschemaid);
+			while(nitr.hasNext()) {
+				Node n = nitr.next();
+				String bin = n.getFeatureValue(blockfid).getStringValue();
+				if (prefixLength > 0 && bin.length() > prefixLength)
+					bin = bin.substring(0, prefixLength-1);
+				
+				if (bin.equals(binkey))
+					currbin.add(n);
+			}
+			
+			this.niter = currbin.iterator();
+		}
+		
+		@Override
+		public Edge getNext() {
+			Edge nextedge = null;
+			while(true) {
+				boolean isvalid = true;			
+				// Iterator has reached its end
+				if(done || !niter.hasNext()) 
+					return null;
+				// Check pair
+				Node n = niter.next();
+				// Check pair
+				if(!allowselflinks && myNode.equals(n)) 
+					isvalid = false;
+				 else if(!allowduplinks && myNode.isAdjacent(n, edgeschemaid)) 
+					isvalid = false;
+				// Add edge
+				if(isvalid) {
+					nextedge = g.addUndirectedEdge(GraphItemID.generateGraphItemID(g, edgeschemaid),
+						myNode, n);
+					break;
+				}
+			}
+			
+			return nextedge;
+		}
+	}
+	
 	private void initialize() {
 		initialize = false;
 		
@@ -284,6 +448,9 @@ public class BlockedPairs extends BaseConfigurable implements PotentialLinkGener
 		
 		// Get node schema id
 		nodeschemaid = this.getStringParameter("nodeschemaid");
+		
+		// Set prefix length
+		prefixLength = this.getIntegerParameter("prefixlength", -1);
 	}
 
 	public void addAllLinks(Graph g, String edgeschemaid) {
@@ -295,4 +462,5 @@ public class BlockedPairs extends BaseConfigurable implements PotentialLinkGener
 		PLGUtils.addAllLinks(g, edgeschemaid, existfeature,
 				this.getLinksIteratively(g, edgeschemaid), setasnotexist);
 	}
+	
 }

@@ -690,8 +690,12 @@ public class RelationalClustering extends BaseConfigurable
 				
 				// Update neighbor similarity in queue
 				for(Node n:neighbors) {
-					Set<CPair> nclusterstmp = new HashSet<CPair>(node2entry.getSet(n));
+					// hack to fix crash
+					// TODO check if n should ever not be in node2entry
+					if (!node2entry.hasKey(n))
+						continue;
 					
+					Set<CPair> nclusterstmp = new HashSet<CPair>(node2entry.getSet(n));					
 					Set<CPair> nclusters = new HashSet<CPair>(nclusterstmp);
 					
 					if(!n.isAdjacent(mergednode)) {
