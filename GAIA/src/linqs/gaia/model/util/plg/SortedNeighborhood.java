@@ -75,6 +75,7 @@ public class SortedNeighborhood extends BaseConfigurable implements PotentialLin
 		// Return existing edges matching some criterion
 		if(!type.equals(SchemaType.UNDIRECTED)) {
 			throw new UnsupportedTypeException("Unsupported edge type: "+edgeschemaid+" is "+type);
+			// TODO make this support directed links
 		}
 		
 		// Check to see if the feature for the bin value is specified

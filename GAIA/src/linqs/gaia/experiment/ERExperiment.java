@@ -19,6 +19,7 @@ package linqs.gaia.experiment;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Iterator;
+import java.util.Set;
 
 import linqs.gaia.exception.ConfigurationException;
 import linqs.gaia.exception.UnsupportedTypeException;
@@ -30,7 +31,9 @@ import linqs.gaia.graph.Node;
 import linqs.gaia.graph.io.DirectoryBasedIO;
 import linqs.gaia.graph.io.IO;
 import linqs.gaia.graph.io.SparseTabDelimIO;
+import linqs.gaia.identifiable.GraphItemID;
 import linqs.gaia.log.Log;
+import linqs.gaia.model.er.ERUtils;
 import linqs.gaia.model.er.EntityResolution;
 import linqs.gaia.model.util.plg.PotentialLinkGenerator;
 import linqs.gaia.prediction.existence.ExistencePred;
@@ -123,6 +126,22 @@ public class ERExperiment extends Experiment {
 		
 		er.predictAsLink(predGraph, generator);
 		
+		// compute transitive closure if desired
+		if (this.getYesNoParameter("transitiveclosure", "no")) {
+			Log.INFO("Computing transitive closure");
+			List<Set<Node>> entities = ERUtils.getTransitiveEntity(predGraph, refschemaid, corefschemaid); 
+			
+			for (Set<Node> entity : entities)
+				for (Node n1 : entity) 
+					for (Node n2 : entity) {
+						if (!n1.equals(n2) && !n1.isAdjacent(n2, corefschemaid)) {
+							predGraph.addUndirectedEdge(GraphItemID.generateGraphItemID(predGraph, corefschemaid),
+									n1, n2);
+						}
+					}
+
+		}
+		
 		Log.INFO("Predicted graph:");
 		Log.INFO(GraphUtils.getSimpleGraphOverview(predGraph));
 		
@@ -146,8 +165,6 @@ public class ERExperiment extends Experiment {
 		
 		Iterator<Edge> itr = predGraph.getEdges(corefschemaid);
 		
-		int truePos = 0, falsePos = 0;
-		
 		while (itr.hasNext()) {
 			Edge e = itr.next();
 			
@@ -163,14 +180,8 @@ public class ERExperiment extends Experiment {
 			ExistencePred pred = new ExistencePred(e.getID().toString(), 
 					n1.isAdjacent(n2, corefschemaid) ? ExistencePredGroup.EXIST : ExistencePredGroup.NOTEXIST);
 			epg.addPrediction(pred);
-			
-			if (n1.isAdjacent(n2, corefschemaid))
-				truePos++;
-			else
-				falsePos++;
 		}
 				
-		Log.DEBUG("True pos: " + truePos + ", false pos: " + falsePos);
 		
 		// compute statistics
 
@@ -184,7 +195,6 @@ public class ERExperiment extends Experiment {
 		statistics = new LinkedList<Statistic>();
 		
 		for(String statclass:statclasses) {
-			Log.DEBUG(statclass);
 			Statistic stat = (Statistic) Dynamic.forConfigurableName(Statistic.class, statclass);
 			stat.copyParameters(this);
 			statistics.add(stat);
@@ -213,7 +223,7 @@ public class ERExperiment extends Experiment {
 		
 		exp.runExperiment();
 
-		Log.INFO("Splitting Runtime: "+timer.timeLapse(true)+"\t"+timer.timeLapse(false));
+		Log.INFO("ER Experiment running time: "+timer.timeLapse(true)+"\t"+timer.timeLapse(false));
 		
 		
 	}
