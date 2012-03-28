@@ -22,9 +22,11 @@ import java.util.List;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.exception.InvalidStateException;
+import linqs.gaia.exception.UnsupportedTypeException;
 import linqs.gaia.feature.schema.Schema;
 import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.Graph;
+import linqs.gaia.graph.GraphUtils;
 import linqs.gaia.graph.Node;
 import linqs.gaia.log.Log;
 import linqs.gaia.model.util.plg.PotentialLinkGenerator;
@@ -63,6 +65,7 @@ import linqs.gaia.util.TopK;
  * Default is to rely solely on threshold.
  * <LI> checkpoint-If set, this the current number of links predicted over is printed
  * as an INFO message whenever (the current number)%(checkpoint) == 0.
+ * <LI> learnthreshold-if set, indicates whether to learn the threshold. Overrides user-set threshold.
  * </UL>
  * 
  * @author namatag
@@ -76,6 +79,7 @@ public class ScoreThreshold extends BaseConfigurable implements LinkPredictor {
 	private Double threshold = .5;
 	private Integer topk = null;
 	private Double checkpoint = null;
+	private boolean learnthreshold = false;
 	
 	/**
 	 * Initialize the model
@@ -100,6 +104,8 @@ public class ScoreThreshold extends BaseConfigurable implements LinkPredictor {
 			this.topk = this.getIntegerParameter("topk");
 		}
 		
+		learnthreshold = this.getYesNoParameter("learnthreshold", "no");
+		
 		// Get node similarity measure
 		this.nodesim = (NodeSimilarity) Dynamic.forConfigurableName(NodeSimilarity.class,
 				this.getStringParameter("nodesimclass"), this);
@@ -107,10 +113,22 @@ public class ScoreThreshold extends BaseConfigurable implements LinkPredictor {
 	
 	public void learn(Graph graph, PotentialLinkGenerator generator, String edgeschemaid) {
 		this.initialize(graph, edgeschemaid);
+		if (learnthreshold) {
+			Graph dummyGraph = graph.copy("dummyGraph");
+
+			Iterator<Edge> eitr = dummyGraph.getEdges(edgeschemaid);
+			while (eitr.hasNext()) {
+				dummyGraph.removeEdge(eitr.next());
+			}
+
+			this.learnThreshold(graph, generator.getLinksIteratively(dummyGraph, edgeschemaid), null);
+		}
 	}
 
 	public void learn(Graph graph, Iterable<Edge> knownedges, String edgeschemaid, String existfeature) {
 		this.initialize(graph, edgeschemaid);
+		if (learnthreshold)
+			this.learnThreshold(graph, knownedges.iterator(), existfeature);
 	}
 	
 	public void predict(Graph graph, Iterable<Edge> unknownedges) {
@@ -137,6 +155,107 @@ public class ScoreThreshold extends BaseConfigurable implements LinkPredictor {
 				existfeature);
 	}
 	
+	private void learnThreshold(Graph graph, Iterator<Edge> eitr, String existfeature) {
+		double [] thresholds = { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+		Integer [] tp = new Integer[thresholds.length];
+		Integer [] tn = new Integer[thresholds.length];
+		Integer [] fp = new Integer[thresholds.length];
+		Integer [] fn = new Integer[thresholds.length];
+		int counter = 0;
+		
+		//Log.DEBUG("Starting learning with " + GraphUtils.getSimpleGraphOverview(graph));
+		
+		for (int i = 0; i < thresholds.length; i++) {
+			tp[i] = 0;
+			tn[i] = 0;
+			fp[i] = 0;
+			fn[i] = 0;
+		}
+		
+		int trueEdges = 0;
+		MinMax minmax = new MinMax();
+				
+		while (eitr.hasNext()) {
+			
+			Edge edge = eitr.next();
+			
+			if(edge.numNodes()!=2)
+				throw new UnsupportedTypeException("Only binary edges supported");
+			
+			Iterator<Node> nitr = edge.getAllNodes();
+			
+			Node n1 = nitr.next();
+			Node n2 = nitr.next();
+			
+			double sim = this.nodesim.getSimilarity(n1, n2);		
+			minmax.addValue(sim);
+			
+			n1 = (Node) graph.getEquivalentGraphItem(n1);
+			n2 = (Node) graph.getEquivalentGraphItem(n2);
+			
+			boolean isTrueEdge = (existfeature == null) ? 
+					n1.isAdjacent(n2, edgeschemaid) : 
+						edge.getFeatureValue(existfeature).equals(LinkPredictor.EXISTVALUE);
+								
+			for (int i = 0; i < thresholds.length; i++) {
+				if (isTrueEdge) {
+					if (sim >= thresholds[i]) 
+						tp[i]++;
+					else
+						fn[i]++;
+				} else {
+					if (sim >= thresholds[i])
+						fp[i]++;
+					else
+						tn[i]++;
+				}
+			}
+			
+			if (existfeature == null)
+				this.removeEdgeAsNotExist(edge, true, existfeature);
+			
+			if (isTrueEdge)
+				trueEdges++;
+			
+			if (counter%checkpoint == 0)
+				Log.INFO("Processed " + counter + " pairs for threshold-learning.");
+			counter++;
+		}
+		
+		//Log.DEBUG("Evaluated learning over " + counter + " edges");
+		
+		for (int i = 0; i < thresholds.length; i++) {
+			// add missed positives
+			fn[i] += graph.numGraphItems(edgeschemaid) - trueEdges;
+			//Log.DEBUG("threshold " + thresholds[i] + ", tp " + tp[i] + ", fp " + fp[i] + ", fn " + fn[i]);
+		}
+			
+		double bestF1 = Double.NEGATIVE_INFINITY;
+		for (int i = 0; i < thresholds.length; i++) {
+			double precision = tp[i].doubleValue() / (tp[i].doubleValue() + fp[i].doubleValue());
+			double recall = tp[i].doubleValue() / (tp[i].doubleValue() + fn[i].doubleValue());
+			double f1 = 2 * precision * recall / (precision + recall);
+			
+			if (f1 >= bestF1) {
+				bestF1 = f1;
+				this.threshold = thresholds[i];
+			}
+
+			//Log.DEBUG("threshold " + thresholds[i] + ". prec: " + precision + ", rec: " + recall + ", f1: " + f1);
+		}
+		
+		Log.INFO("Best threshold is " + this.threshold + " with expected f1 of " + bestF1);
+		this.setParameter("threshold", threshold);
+		
+		//Log.DEBUG("this.threshold: " + this.threshold);
+		
+		//Log.DEBUG("Similarity Distribution:"
+		//		+" Min="+minmax.getMin()
+		//		+" Max="+minmax.getMax()
+		//		+" Mean="+minmax.getMean());
+	
+	}
+	
 	private void predict(Graph graph, Iterator<Edge> eitr,
 			boolean removenotexist, String existfeature) {
 		// Add exist feature, if not already defined
@@ -145,6 +264,8 @@ public class ScoreThreshold extends BaseConfigurable implements LinkPredictor {
 			schema.addFeature(existfeature, LinkPredictor.EXISTENCEFEATURE);
 			graph.updateSchema(edgeschemaid, schema);
 		}
+		
+		Log.DEBUG("Starting prediction with " + GraphUtils.getSimpleGraphOverview(graph));
 		
 		int numpredover = 0;
 		int numexist = 0;
@@ -180,7 +301,7 @@ public class ScoreThreshold extends BaseConfigurable implements LinkPredictor {
 			// Get similarity of nodes
 			double sim = this.nodesim.getSimilarity(n1, n2);
 			minmax.addValue(sim);
-			
+						
 			// Keep everything above a threshold, inclusive
 			if(topk == null) {
 				if(sim >= this.threshold) {

@@ -117,7 +117,7 @@ public class ERExperiment extends Experiment {
 		if(this.savemodelfile!=null) {
 			er.saveModel(this.savemodelfile);
 		}
-	
+		
 		Schema coref = graph.getSchema(corefschemaid);
 		Graph predGraph = graph.copy("predictedGraph");
 		
@@ -130,7 +130,7 @@ public class ERExperiment extends Experiment {
 		if (this.getYesNoParameter("transitiveclosure", "no")) {
 			Log.INFO("Computing transitive closure");
 			List<Set<Node>> entities = ERUtils.getTransitiveEntity(predGraph, refschemaid, corefschemaid); 
-			
+
 			for (Set<Node> entity : entities)
 				for (Node n1 : entity) 
 					for (Node n2 : entity) {
@@ -141,7 +141,7 @@ public class ERExperiment extends Experiment {
 					}
 
 		}
-		
+
 		Log.INFO("Predicted graph:");
 		Log.INFO(GraphUtils.getSimpleGraphOverview(predGraph));
 		
