@@ -16,7 +16,10 @@
  */
 package linqs.gaia.experiment;
 
+import java.util.Iterator;
+
 import linqs.gaia.feature.decorable.Decorable;
+import linqs.gaia.feature.explicit.ExplicitCateg;
 import linqs.gaia.feature.explicit.ExplicitString;
 import linqs.gaia.feature.schema.Schema;
 import linqs.gaia.feature.values.StringValue;
@@ -30,6 +33,7 @@ import linqs.gaia.log.Log;
 import linqs.gaia.sampler.decorable.DecorableSampler;
 import linqs.gaia.util.Dynamic;
 import linqs.gaia.util.SimpleTimer;
+import linqs.gaia.util.UnmodifiableList;
 
 //TODO documentation
 public class SplitData extends Experiment {
@@ -52,6 +56,18 @@ public class SplitData extends Experiment {
 		targetschemaID = this.getStringParameter("targetschemaID");
 
 		
+		if (this.getYesNoParameter("adddummyfeature", "no")) {
+			String [] dummyVals = {"0"};
+			Schema schema = graph.getSchema(targetschemaID);
+			schema.addFeature("dummy", new ExplicitCateg(new UnmodifiableList<String>(dummyVals)));
+			graph.replaceSchema(targetschemaID, schema);
+			Iterator<Node> nitr = graph.getNodes(targetschemaID);
+			while (nitr.hasNext()) {
+				Node node = nitr.next();
+				node.setFeatureValue("dummy", "0");
+			}
+		}
+		
 		DecorableSampler sampler = (DecorableSampler)
 				Dynamic.forConfigurableName(DecorableSampler.class,this.getStringParameter("samplerclass"));
 		sampler.copyParameters(this);
@@ -59,6 +75,18 @@ public class SplitData extends Experiment {
 
 		Log.DEBUG("Sampling complete: Number of subsets="+sampler.getNumSubsets());
 		
+		
+		// remove dummy feature
+		if (this.getYesNoParameter("adddummyfeature", "no")) {
+			Iterator<Node> nitr = graph.getNodes(targetschemaID);
+			while (nitr.hasNext()) {
+				Node node = nitr.next();
+				node.removeFeatureValue("dummy");
+			}
+			Schema schema = graph.getSchema(targetschemaID);
+			schema.removeFeature("dummy");
+			graph.replaceSchema(targetschemaID, schema);
+		}
 		
 		// output splits
 		
@@ -100,24 +128,27 @@ public class SplitData extends Experiment {
 				samplingio.saveGraph(traingraph);
 				
 				traingraph.destroy();
-				
-				Graph testgraph = graph.copy(graph.getID().getObjID()+"-testcopy"+i);
-				for(Decorable d:sampler.getSubset(i)) {
-					GraphItem gi = (GraphItem) d;
-					if(gi instanceof Node) {
-						testgraph.removeNodeWithEdges(((Node) gi).getID().copyWithoutGraphID());
-					} else {
-						testgraph.removeGraphItem(gi.getID().copyWithoutGraphID());
-					}
-				}
-				Log.DEBUG("Testing Graph: "+GraphUtils.getSimpleGraphOverview(testgraph));
-				
 
-				samplingio.setParameter("filedirectory", this.getStringParameter("outputdirectory")+"/testSplit"+i);
-				
-				samplingio.saveGraph(testgraph);
-				
-				testgraph.destroy();
+				if (this.getYesNoParameter("outputtesting", "yes")) {
+
+					Graph testgraph = graph.copy(graph.getID().getObjID()+"-testcopy"+i);
+					for(Decorable d:sampler.getSubset(i)) {
+						GraphItem gi = (GraphItem) d;
+						if(gi instanceof Node) {
+							testgraph.removeNodeWithEdges(((Node) gi).getID().copyWithoutGraphID());
+						} else {
+							testgraph.removeGraphItem(gi.getID().copyWithoutGraphID());
+						}
+					}
+					Log.DEBUG("Testing Graph: "+GraphUtils.getSimpleGraphOverview(testgraph));
+
+
+					samplingio.setParameter("filedirectory", this.getStringParameter("outputdirectory")+"/testSplit"+i);
+
+					samplingio.saveGraph(testgraph);
+
+					testgraph.destroy();
+				}
 			}
 		
 			

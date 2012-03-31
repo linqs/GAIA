@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Map;
 
 import linqs.gaia.exception.ConfigurationException;
 import linqs.gaia.exception.UnsupportedTypeException;
@@ -203,10 +204,11 @@ public class ERExperiment extends Experiment {
 		// Get split statistics
 		Log.INFO("Statistics: ");
 		for(Statistic stat: statistics) {
-			String statstring = stat.getStatisticString(epg);
-			Log.INFO("Statistic string: "+statstring);
+			Map<String,Double> statVals = stat.getStatisticDoubles(epg);
+			for (String key : statVals.keySet()) {
+				Log.INFO(key + ": "+statVals.get(key));
+			}
 		}
-				
 	}
 
 
