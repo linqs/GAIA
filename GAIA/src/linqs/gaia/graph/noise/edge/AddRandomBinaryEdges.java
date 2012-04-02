@@ -107,7 +107,11 @@ public class AddRandomBinaryEdges extends Noise {
 		
 		// Number of random edges to add
 		int numrandom = 0;
-		if(this.hasParameter("numrandom")) {
+		if(this.hasParameter("numrandomparam")) {
+			String propname = this.getStringParameter("numrandomparam");
+			String propvalue = System.getProperty(propname);
+			numrandom = Integer.parseInt(propvalue);
+		} else if(this.hasParameter("numrandom")) {
 			numrandom = this.getIntegerParameter("numrandom");
 		}
 		

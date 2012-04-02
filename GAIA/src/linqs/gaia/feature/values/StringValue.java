@@ -17,6 +17,7 @@
 package linqs.gaia.feature.values;
 
 import linqs.gaia.exception.InvalidAssignmentException;
+import linqs.gaia.exception.InvalidStateException;
 import linqs.gaia.feature.StringFeature;
 
 /**
@@ -65,6 +66,17 @@ public class StringValue implements FeatureValue {
 	 */
 	public String toString() {
 		return this.getClass().getCanonicalName()+"="+this.getStringValue();
+	}
+	
+	public static StringValue parseString(String value) {
+		value = value.trim();
+		if(!value.startsWith(StringValue.class.getCanonicalName()+"=")) {
+			throw new InvalidStateException("String not a valid string representation of this feature");
+		}
+		
+		value = value.replace(StringValue.class.getCanonicalName()+"=", "");
+		
+		return new StringValue(value);
 	}
 	
 	public boolean equals(Object obj) {

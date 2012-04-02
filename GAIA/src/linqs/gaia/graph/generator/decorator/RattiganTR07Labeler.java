@@ -29,16 +29,16 @@ import java.util.TreeSet;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.exception.ConfigurationException;
-import linqs.gaia.feature.CategFeature;
 import linqs.gaia.feature.explicit.ExplicitCateg;
+import linqs.gaia.feature.explicit.ExplicitNum;
 import linqs.gaia.feature.schema.Schema;
 import linqs.gaia.feature.values.CategValue;
+import linqs.gaia.feature.values.FeatureValue;
+import linqs.gaia.feature.values.NumValue;
 import linqs.gaia.graph.Graph;
 import linqs.gaia.graph.GraphItem;
 import linqs.gaia.graph.Node;
-import linqs.gaia.log.Log;
 import linqs.gaia.util.IteratorUtils;
-import linqs.gaia.util.UnmodifiableList;
 
 /**
  * Creates a categorical feature, as well as numeric features,
@@ -60,7 +60,9 @@ import linqs.gaia.util.UnmodifiableList;
  * <LI> numrandomperlabel-Number of nodes to randomly assign to each label.  Default is 1.
  * <LI> pctrandomperlabel-Percentage of nodes to randomly assign to each label.
  * This overrides "numrandomperlabel" if specified.  Default is to use the default "numrandomperlabel".
- * <LI> usepercent-If yes, use percent to rerank neighbors.  Default is no.
+ * <LI> usepercent-If "yes", use percent to rerank neighbors.  Default is "no".
+ * <LI> asnumeric-If "yes", create a numeric attribute (with default value 0.0) instead of a categorical one
+ * (e.g., store the index instead).  Default is "no".
  * <LI> seed-Random number generator seed.  Default is 0.
  * </UL>
  * 
@@ -75,9 +77,10 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 	private int numrandomperlabel = 1;
 	private int seed = 0;
 	
-	private List<CategValue> values = null;
+	private List<FeatureValue> values = null;
 	
 	private boolean usepercent = false;
+	private boolean asnumeric = false;
 	
 	/**
 	 * Support for function calls which call this method.
@@ -91,14 +94,19 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 	 * @param seed Random number generator seed to use
 	 */
 	public void decorate(Graph g, String nodeschemaid, String targetfeatureid,
-			int numlabels, int numrandomperlabel,
-			boolean usepercent, int seed) {
+			int numlabels, int numrandomperlabel, Double pctrandomperlabel,
+			boolean usepercent, boolean asnumeric, int seed) {
 		
 		this.setParameter("nodeschemaid", nodeschemaid);
 		this.setParameter("targetfeatureid", targetfeatureid);
 		this.setParameter("numlabels", ""+numlabels);
+		if(pctrandomperlabel!=null) {
+			this.setParameter("pctrandomperlabel", pctrandomperlabel);
+		}
+		
 		this.setParameter("numrandomperlabel", ""+numrandomperlabel);
 		this.setParameter("usepercent", usepercent ? "yes" : "no");
+		this.setParameter("asnumeric", asnumeric ? "yes" : "no");
 		this.setParameter("seed", ""+seed);
 		
 		this.decorate(g);
@@ -123,7 +131,6 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 		if(this.hasParameter("pctrandomperlabel")) {
 			double pct = this.getDoubleParameter("pctrandomperlabel");
 			this.numrandomperlabel = (int) (g.numGraphItems(this.nodeschemaid) * pct);
-			Log.DEV(this.numrandomperlabel);
 		}
 		
 		if(this.hasParameter("usepercent", "yes")) {
@@ -135,16 +142,18 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 					+this.getStringParameter("usepercent"));
 		}
 		
+		asnumeric = this.getYesNoParameter("asnumeric", "no");
+		
 		if(this.hasParameter("seed")) {
 			this.seed = (int) this.getDoubleParameter("seed");
 		}
 		
-		values = new ArrayList<CategValue>(numlabels);
+		values = new ArrayList<FeatureValue>(numlabels);
 		for(int i=0; i<numlabels; i++) {
 			// Set target attribute
 			double[] probs = new double[this.numlabels];
 			probs[i] = 1;
-			values.add(new CategValue(""+i, probs));
+			values.add(asnumeric ? new NumValue(i) : new CategValue(""+i, probs));
 		}
 		
 		// Label graph
@@ -170,7 +179,8 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 		Schema schema = g.getSchema(nodeschemaid);
 		
 		// Add feature for label
-		schema.addFeature(targetfeatureid, new ExplicitCateg(Arrays.asList(classDomain)));
+		schema.addFeature(targetfeatureid, 
+				asnumeric ? new ExplicitNum(new NumValue(0.0)) : new ExplicitCateg(Arrays.asList(classDomain)));
 		
 		// Update schema
 		g.updateSchema(nodeschemaid, schema);
@@ -223,10 +233,10 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 				String key = n.toString();
 
 				// Generate features and set label i for the given node
-				this.setLabel(n, i, rand);
+				this.setLabel(n, i);
 
 				// Update its neighbors
-				updateNeighbors(n, labelings, mappings);
+				updateNeighbors(n, labelings, mappings, classDomain);
 
 				// Remove it from all storages
 				randomSel.remove(objId);
@@ -250,10 +260,10 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 				String key = n.toString();
 				
 				// Generate features and set label i for the given node
-				this.setLabel(n, i, rand);
+				this.setLabel(n, i);
 				
 				// Update its neighbors
-				updateNeighbors(n, labelings, mappings);
+				updateNeighbors(n, labelings, mappings, classDomain);
 				
 				// Remove it from all storages
 				ArrayList<ComparableNode> cbdns = mappings.get(key);				
@@ -275,9 +285,8 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 	 * 
 	 * @param n Node to generate attribute for
 	 * @param c Label index
-	 * @param rand Random number generator
 	 */
-	private void setLabel(Node n, int c, Random rand) {
+	private void setLabel(Node n, int c) {
 		// Set target attribute
 		n.setFeatureValue(this.targetfeatureid, values.get(c));
 	}
@@ -290,7 +299,7 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 	 * @param mappings Mapped lists
 	 */
 	private void updateNeighbors(Node n, TreeSet<ComparableNode>[] labelings,
-			Map<String, ArrayList<ComparableNode>> mappings) {
+			Map<String, ArrayList<ComparableNode>> mappings, String[] categs) {
 
 		Set<Node> neighbors = getNeighbors(n); 
 		for(Node n2: neighbors){
@@ -301,9 +310,9 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 				// Compute a new percentage OR a count
 				double[] rank;
 				if(usepercent) {
-					rank = computePercentages(n2, labelings.length);
+					rank = computePercentages(n2, labelings.length, categs);
 				} else {
-					rank = computeCounts(n2, labelings.length);
+					rank = computeCounts(n2, labelings.length, categs);
 				}
 
 				// Remove from treesets and add it back in with the new rank
@@ -333,22 +342,28 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 	 * 
 	 * @return Double array of form [#withCat1,#withCat2,...,#withCatN].
 	 */
-	private double[] computeCounts(Node n, int numLabels) {
+	private double[] computeCounts(Node n, int numLabels, String[] categs) {
 		double[] counts = new double[numLabels];
-		Schema schema = n.getSchema();
-		CategFeature cf = (CategFeature) schema.getFeature(targetfeatureid);
-		UnmodifiableList<String> categs = cf.getAllCategories();
 		
 		Set<Node> neighbors = getNeighbors(n);
-		for(int i=0;i<counts.length;i++){
+		for(int i=0;i<numLabels;i++){
 			double count=0;
-			String currcat = categs.get(i);
+			String currcat = categs[i];
 			
 			for(Node n2: neighbors){
 				if(n2.hasFeatureValue(targetfeatureid)) {
-					CategValue fv = (CategValue) n2.getFeatureValue(targetfeatureid);
-					if(fv.getCategory().equals(currcat)) {
-						count++;
+					FeatureValue fv = n2.getFeatureValue(targetfeatureid);
+					if(asnumeric) {
+						double value1 = Double.parseDouble(currcat);
+						double value2 = ((NumValue) fv).getNumber();
+						if(value1==value2) {
+							count++;
+						}
+					} else { 
+						String n2value = ((CategValue) fv).getCategory();
+						if(n2value.equals(currcat)) {
+							count++;
+						}
 					}
 				}
 			}
@@ -366,8 +381,8 @@ public class RattiganTR07Labeler extends BaseConfigurable implements Decorator {
 	 * @param numLabels Number of labels
 	 * @return Double array of form [%withCat1,%withCat2,...,%withCatN].
 	 */
-	private double[] computePercentages(Node n, int numLabels) {
-		double[] pers = this.computeCounts(n, numLabels);
+	private double[] computePercentages(Node n, int numLabels, String[] categs) {
+		double[] pers = this.computeCounts(n, numLabels, categs);
 
 		Set<Node> neighbors = getNeighbors(n);
 		double size = neighbors.size();

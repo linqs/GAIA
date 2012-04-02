@@ -30,6 +30,7 @@ import linqs.gaia.graph.generator.decorator.Decorator;
 import linqs.gaia.graph.io.IO;
 import linqs.gaia.graph.noise.Noise;
 import linqs.gaia.graph.statistic.GraphStatistic;
+import linqs.gaia.graph.transformer.Transformer;
 import linqs.gaia.log.Log;
 import linqs.gaia.util.Dynamic;
 import linqs.gaia.util.SimpleTimer;
@@ -55,6 +56,8 @@ import linqs.gaia.util.SimpleTimer;
  * (to instantiate using {@link Dynamic#forConfigurableName}) to use add attributes to the graph
  * <LI>noiseclasses-Comma delimited list of configurable {@link Noise} classes
  * (to instantiate using {@link Dynamic#forConfigurableName}) to use add noise to the graph
+ * <LI>transformerclasses=Comma delimited list of configurable {@link Transformer} classes
+ * (to instantiate using {@link Dynamic#forConfigurableName}) to use transform the graph
  * <LI>graphstats-Comma delimited list of {@link GraphStatistic} classes,
  * instantiated using in {@link Dynamic#forConfigurableName},
  * to calculate over the loaded graph
@@ -115,6 +118,22 @@ public class GraphGeneratorExperiment extends Experiment {
 				indivtimer.start();
 				n.addNoise(g);
 				Log.INFO("Added Noisy to Graph With: "+decoratorclass+" "+indivtimer.timeLapse());
+			}
+		}
+		
+		// Get noise generators, if specified
+		if(this.hasParameter("transformerclasses")) {
+			// Print statistics of the generated graph before transforming
+			Log.INFO("Graph before transformer: \n"+GraphUtils.getGraphOverview(g));
+			
+			String[] transformerclasses = this.getStringParameter("transformerclasses").split(",");
+			for(String transformerclass:transformerclasses) {
+				Transformer t = (Transformer) Dynamic.forConfigurableName(Transformer.class, transformerclass);
+				t.copyParameters(this);
+				Log.INFO("Transforming Graph With: "+transformerclass);
+				indivtimer.start();
+				t.transform(g);
+				Log.INFO("Transforming Graph With: "+transformerclass+" "+indivtimer.timeLapse());
 			}
 		}
 		

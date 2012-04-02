@@ -30,7 +30,7 @@ import linqs.gaia.util.KeyedCount;
  * Optional Parameters:
  * <UL>
  * <LI>binfeatureid-Feature ID for a numeric valued attribute to use as a bin value.
- * If set, this explicit valued string feature will contain a value for use in "binning"
+ * If set, this explicit valued numeric feature will contain a value for use in "binning"
  * where only those nodes with the same bin value are considered as those whose entities
  * maybe the same.  (i.e., when resolving names, you can use the first initial of the
  * last name to reduce the number of pairwise comparison you have to make).
@@ -40,6 +40,10 @@ import linqs.gaia.util.KeyedCount;
  * or, given some ambiguity probability, to a number previously assigned in the same range.
  * <LI>erfeaturerange-The value of erfeatureid will be between 0 (inclusive) and this number (exclusive).
  * Default is 10000.
+ * <LI>erfeaturerangefactor-If specified, ignore erfeaturerange and instead set the
+ * value for erfeaturerange to this value times the number of nodes
+ * (e.g., if this is set to 2 for a graph with 1000 nodes,
+ * this is equivalent to setting erfeaturerange=2000).
  * <LI>featureasbin-If yes, assign the bin feature to the ER feature's value.
  * If not, the bin will be randomly assigned using numbins.
  * <LI>ambprob-Probability of ambiguity for ER feature.  Default is .2.
@@ -103,6 +107,11 @@ public class BhattacharyaTKDD07Value extends BaseConfigurable implements Decorat
 				erfeaturerange = this.getDoubleParameter("erfeaturerange");
 			}
 			
+			if(this.hasParameter("erfeaturerangefactor")) {
+				double erfeaturerangefactor = this.getDoubleParameter("erfeaturerangefactor");
+				erfeaturerange = g.numGraphItems(nodeschemaid) * erfeaturerangefactor;
+			}
+			
 			erfeatureid = this.getStringParameter("erfeatureid");
 			
 			if(this.hasParameter("ambprob")) {
@@ -131,7 +140,7 @@ public class BhattacharyaTKDD07Value extends BaseConfigurable implements Decorat
 		
 		/*************************************/
 		
-		// Iterate over all the notes and set as requested
+		// Iterate over all the nodes and set as requested
 		KeyedCount<String> bincount = new KeyedCount<String>();
 		Iterator<Node> nitr = g.getNodes(nodeschemaid);
 		while(nitr.hasNext()) {

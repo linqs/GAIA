@@ -43,5 +43,5 @@ public interface PredictionGroup {
 	 * 
 	 * @return Number of predictions
 	 */
-	int numPredictions();
+	long numPredictions();
 }

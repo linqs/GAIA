@@ -58,8 +58,8 @@ public class ExistencePredGroup implements PositiveOnlyGroup, CategoricalValuedG
 	public static final double[] EXISTPROB = new double[]{0,1};
 	public static final double[] NOTEXISTPROB = new double[]{1,0};
 	
-	private int numpositive = 0;
-	private int numtotal = 0;
+	private long numpositive = 0;
+	private long numtotal = 0;
 	private List<ExistencePred> predictions = new LinkedList<ExistencePred>();
 	private List<ExistencePred> partialnegpredictions = new LinkedList<ExistencePred>();
 	
@@ -73,24 +73,24 @@ public class ExistencePredGroup implements PositiveOnlyGroup, CategoricalValuedG
 	 * @param numtotal Number of total items (including those not explicitly defined)
 	 * @param numpositive Number of total positive items (including those positive items not explicitly defined)
 	 */
-	public ExistencePredGroup(int numtotal, int numpositive) {
+	public ExistencePredGroup(long numtotal, long numpositive) {
 		this.numtotal = numtotal;
 		this.numpositive = numpositive;
 	}
 	
-	public void setNumPositive(int numpositive) {
+	public void setNumPositive(long numpositive) {
 		this.numpositive = numpositive;
 	}
 	
-	public void setNumTotal(int numtotal) {
+	public void setNumTotal(long numtotal) {
 		this.numtotal = numtotal;
 	}
 
-	public int getNumPositive() {
+	public long getNumPositive() {
 		return this.numpositive;
 	}
 
-	public int getNumTotal() {
+	public long getNumTotal() {
 		return this.numtotal;
 	}
 	
@@ -107,8 +107,9 @@ public class ExistencePredGroup implements PositiveOnlyGroup, CategoricalValuedG
 		return this.predictions.iterator();
 	}
 
-	public int numPredictions() {
-		return this.predictions.size();
+	public long numPredictions() {
+		long size = this.predictions.size();
+		return size;
 	}
 
 	public void removeAllPredictions() {
@@ -133,7 +134,7 @@ public class ExistencePredGroup implements PositiveOnlyGroup, CategoricalValuedG
 		return this.partialnegpredictions.iterator();
 	}
 	
-	public int numPartialPredictions() {
+	public long numPartialPredictions() {
 		return this.partialnegpredictions.size();
 	}
 
@@ -211,8 +212,8 @@ public class ExistencePredGroup implements PositiveOnlyGroup, CategoricalValuedG
 					throw new InvalidStateException("Invalid tab delimited first line: "+line);
 				}
 				
-				int numtotal = Integer.parseInt(parts[0]);
-				int numpositive = Integer.parseInt(parts[1]);
+				long numtotal = Long.parseLong(parts[0]);
+				long numpositive = Long.parseLong(parts[1]);
 				
 				epg = new ExistencePredGroup();
 				epg.setNumTotal(numtotal);

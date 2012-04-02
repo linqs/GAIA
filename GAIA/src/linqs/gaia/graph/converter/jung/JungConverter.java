@@ -24,6 +24,8 @@ import java.util.Set;
 
 import linqs.gaia.configurable.BaseConfigurable;
 import linqs.gaia.exception.UnsupportedTypeException;
+import linqs.gaia.feature.schema.Schema;
+import linqs.gaia.feature.schema.SchemaType;
 import linqs.gaia.graph.DirectedEdge;
 import linqs.gaia.graph.Edge;
 import linqs.gaia.graph.Graph;
@@ -226,6 +228,9 @@ public class JungConverter extends BaseConfigurable
 		Graph ourg = (Graph) Dynamic.forConfigurableName(Graph.class,
 				graphclass, argsClass, argValues);
 		ourg.copyParameters(this);
+		ourg.addSchema(nodesid, new Schema(SchemaType.NODE));
+		ourg.addSchema(dirsid, new Schema(SchemaType.DIRECTED));
+		ourg.addSchema(undirsid, new Schema(SchemaType.UNDIRECTED));
 		
 		Collection<Object> vertices = g.getVertices();
 		for(Object v:vertices) {
@@ -237,12 +242,12 @@ public class JungConverter extends BaseConfigurable
 			EdgeType type = g.getEdgeType(e);
 			if(type.equals(EdgeType.UNDIRECTED)) {
 				Pair<Object> curre = g.getEndpoints(e);
-				Node n1 = ourg.getNode(new GraphItemID(undirsid,curre.getFirst().toString()));
-				Node n2 = ourg.getNode(new GraphItemID(undirsid,curre.getSecond().toString()));
+				Node n1 = ourg.getNode(new GraphItemID(nodesid,curre.getFirst().toString()));
+				Node n2 = ourg.getNode(new GraphItemID(nodesid,curre.getSecond().toString()));
 				ourg.addUndirectedEdge(new GraphItemID(undirsid,e.toString()),n1,n2);
-			} else if(type.equals(EdgeType.UNDIRECTED)) {
-				Node n1 = ourg.getNode(new GraphItemID(undirsid,g.getSource(e).toString()));
-				Node n2 = ourg.getNode(new GraphItemID(undirsid,g.getDest(e).toString()));
+			} else if(type.equals(EdgeType.DIRECTED)) {
+				Node n1 = ourg.getNode(new GraphItemID(nodesid,g.getSource(e).toString()));
+				Node n2 = ourg.getNode(new GraphItemID(nodesid,g.getDest(e).toString()));
 				ourg.addDirectedEdge(new GraphItemID(dirsid,e.toString()),n1,n2);
 			} else {
 				throw new UnsupportedTypeException("Unsupported JUNG EdgeType: "+type);
