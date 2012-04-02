@@ -95,6 +95,11 @@ public class KExactMatch extends BaseConfigurable implements ERBootstrap {
 		Iterable<GraphItem> neigh1 = this.neighbor.getNeighbors(gi1);
 		Iterable<GraphItem> neigh2 = this.neighbor.getNeighbors(gi2);
 		
+		// added criterion that the node features also have to be exact matches
+		if (!gi1.getFeatureValue(matchfeatureid).getStringValue().equals(
+				gi2.getFeatureValue(matchfeatureid).getStringValue()))
+			return false;
+		
 		// Get the values of people
 		int nummatch = 0;
 		for(GraphItem g1n:neigh1) {
@@ -125,6 +130,6 @@ public class KExactMatch extends BaseConfigurable implements ERBootstrap {
 		}
 			
 		// Get the intersect of values		
-		return nummatch > k ? true : false;
+		return nummatch >= k ? true : false;
 	}
 }

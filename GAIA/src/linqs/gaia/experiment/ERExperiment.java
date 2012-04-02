@@ -36,6 +36,7 @@ import linqs.gaia.identifiable.GraphItemID;
 import linqs.gaia.log.Log;
 import linqs.gaia.model.er.ERUtils;
 import linqs.gaia.model.er.EntityResolution;
+import linqs.gaia.model.er.RelationalClustering;
 import linqs.gaia.model.util.plg.PotentialLinkGenerator;
 import linqs.gaia.prediction.existence.ExistencePred;
 import linqs.gaia.prediction.existence.ExistencePredGroup;
@@ -60,6 +61,9 @@ import linqs.gaia.util.SimpleTimer;
  * </UL>
  * Optional parameters:
  * <UL>
+ * <LI> removesingletons - removes all nodes from training and testing that have no neighbors according to edgeschemaid
+ * <LI> edgeschemaid - edge id indicating neighbors
+ * <LI> 
  * <LI> savemodelfile - filename to save learned ER model
  * <LI> loadmodelfile - filename of previously learned ER model
  * <LI> predioclass - IO class from linqs.gaia.graph.io to save predicted graph
@@ -104,10 +108,29 @@ public class ERExperiment extends Experiment {
 		EntityResolution er = (EntityResolution) Dynamic.forConfigurableName(EntityResolution.class, this.getStringParameter("entityresolver"));
 		er.copyParameters(this);
 		
+		// TODO this is a bad hack to correct an older hack. Need to refactor these hacks out
+		if (er instanceof linqs.gaia.model.er.RelationalClustering) {
+			((RelationalClustering) er).shouldBootstrap(true);
+		}
+		
 		PotentialLinkGenerator generator = (PotentialLinkGenerator) Dynamic.forConfigurableName(PotentialLinkGenerator.class, 
 				this.getStringParameter("linkgenerator"));
 		generator.copyParameters(this);
 
+		
+		// cut out all singleton nodes
+		if (this.hasParameter("edgeschemaid") && this.getYesNoParameter("removesingletons", "no")) {
+			Log.DEBUG("Removing singleton nodes");
+			Iterator<Node> nitr = graph.getNodes();
+			while (nitr.hasNext()) {
+				Node node = nitr.next();
+				if (node.numAdjacentGraphItems(this.getStringParameter("edgeschemaid")) == 0)
+					graph.removeNodeWithEdges(node);
+			}
+			Log.DEBUG("Resulting graph " + GraphUtils.getSimpleGraphOverview(graph));
+		}
+		
+		
 		// Train classifier
 		if(this.loadmodelfile==null) {
 			er.learn(graph, refschemaid, corefschemaid, generator);

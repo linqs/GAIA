@@ -88,6 +88,18 @@ public class SplitData extends Experiment {
 			graph.replaceSchema(targetschemaID, schema);
 		}
 		
+		// cut out all singleton nodes
+		if (this.hasParameter("edgeschemaid") && this.getYesNoParameter("removesingletons", "no")) {
+			Log.DEBUG("Removing singleton nodes");
+			Iterator<Node> nitr = graph.getNodes();
+			while (nitr.hasNext()) {
+				Node node = nitr.next();
+				if (node.numAdjacentGraphItems(this.getStringParameter("edgeschemaid")) == 0)
+					graph.removeNodeWithEdges(node);
+			}
+			Log.DEBUG("Resulting graph " + GraphUtils.getSimpleGraphOverview(graph));
+		}
+		
 		// output splits
 		
 		if(this.hasParameter("samplingioclass")) {
