@@ -20,7 +20,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import linqs.gaia.exception.InvalidStateException;
 import linqs.gaia.feature.MultiIDFeature;
@@ -41,6 +43,7 @@ import linqs.gaia.log.Log;
 import linqs.gaia.model.lp.LinkPredictor;
 import linqs.gaia.util.IteratorUtils;
 import linqs.gaia.util.KeyedList;
+import linqs.gaia.util.SimplePair;
 import linqs.gaia.util.UnmodifiableSet;
 
 /**
@@ -588,5 +591,73 @@ public class ERUtils {
 		}
 		
 		return entity;
+	}
+	
+	/**
+	 * Create sets of items where an item is in the same
+	 * set as all of the items where it is paired
+	 * with in the specified list of pairs.
+	 * This essentially performs transitive closure
+	 * over the pairs of nodes in the list of pairs.
+	 * 
+	 * @param pairs List of SimplePair objects
+	 * @return Set of sets where the contained sets correspond to
+	 * nodes in the same set due to transitive closure over the pairs
+	 */
+	public static Set<Set<Object>> getPairwiseCoreferentSets(List<SimplePair<Object,Object>> pairs) {
+		Map<Object,Set<Object>> obj2set = new ConcurrentHashMap<Object,Set<Object>>();
+		
+		for(SimplePair<Object,Object> pair:pairs) {
+			Object o1 = pair.getFirst();
+			Object o2 = pair.getSecond();
+			
+			if(obj2set.containsKey(o1) && obj2set.containsKey(o2)) {
+				// If both items are already in sets
+				Set<Object> o1set = obj2set.get(o1);
+				Set<Object> o2set = obj2set.get(o2);
+				
+				// Note: If they're already in the same set, don't need to do anything.
+				if(!o1set.equals(o2set)) {
+					Set<Object> unionset = new HashSet<Object>(o1set.size()+o2set.size());
+					unionset.addAll(o1set);
+					unionset.addAll(o2set);
+					
+					// Update the set to the union set,
+					// including for o1 and o2
+					for(Object o:unionset) {
+						obj2set.put(o, unionset);
+					}
+				}
+			} else if(obj2set.containsKey(o1)) {
+				// If only the first is in a set
+				Set<Object> o1set = obj2set.get(o1);
+				
+				// Add o2 to o1's set and then add o2 to map
+				o1set.add(o2);
+				obj2set.put(o2, o1set);
+			} else if(obj2set.containsKey(o2)) {
+				// If only the second is in a set
+				Set<Object> o2set = obj2set.get(o2);
+				
+				// Add o1 to o2's set and then add o1 to map
+				o2set.add(o1);
+				obj2set.put(o1, o2set);
+			} else {
+				// If neither is in a set
+				
+				// Add both to new set
+				Set<Object> unionset = new HashSet<Object>(2);
+				unionset.add(o1);
+				unionset.add(o2);
+				
+				// Add o1 and o2 to map
+				obj2set.put(o1, unionset);
+				obj2set.put(o2, unionset);
+			}
+		}
+		
+		Set<Set<Object>> finalsets = new HashSet<Set<Object>>(obj2set.values());
+
+		return finalsets;
 	}
 }

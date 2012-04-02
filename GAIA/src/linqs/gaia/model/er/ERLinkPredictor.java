@@ -37,7 +37,8 @@ import linqs.gaia.util.FileIO;
  * <UL>
  * <LI>lpclass-Class of the {@link LinkPredictor} model to use,
  * instantiated using in {@link Dynamic#forConfigurableName}.
- * Default is {@link linqs.gaia.model.lp.ScoreThreshold}.
+ * Default is {@link linqs.gaia.model.lp.ScoreThreshold} which
+ * requires the parameter "nodesimclass".
  * </UL>
  * 
  * @see linqs.gaia.util.Dynamic#forConfigurableName(Class, String)

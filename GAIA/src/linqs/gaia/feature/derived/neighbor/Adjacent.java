@@ -66,6 +66,15 @@ public class Adjacent extends NeighborWithOmmission {
 	private String fvalue = null;
 	private boolean includeself = false;
 	
+	public Adjacent() {
+		// Do nothing
+	}
+	
+	public Adjacent(String connectingsid, String connectingfeature) {
+		this.setParameter("connectingsid", connectingsid);
+		this.setParameter("connectingfeature", connectingfeature);
+	}
+	
 	protected void initialize() {
 		if(this.hasParameter("connectingsid")){
 			connectingsid = this.getStringParameter("connectingsid");

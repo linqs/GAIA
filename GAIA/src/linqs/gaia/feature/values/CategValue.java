@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import linqs.gaia.exception.InvalidAssignmentException;
+import linqs.gaia.exception.InvalidStateException;
 import linqs.gaia.feature.CategFeature;
 import linqs.gaia.util.ArrayUtils;
 
@@ -110,11 +111,31 @@ public class CategValue implements FeatureValue, Serializable {
 		String probstring = null;
 		double[] probs = this.getProbs();
 		if(probs != null) {
-			probstring = ArrayUtils.array2String(probs, ",");
+			probstring = " ["+ArrayUtils.array2String(probs, ",")+"]";
 		}
 		
-		return this.getClass().getCanonicalName()+"="+this.getCategory()
-			+" ["+probstring+"]";
+		return this.getClass().getCanonicalName()+"="+this.getCategory()+probstring;
+	}
+	
+	public static CategValue parseString(String value) {
+		value = value.trim();
+		if(!value.startsWith(CategValue.class.getCanonicalName()+"=")) {
+			throw new InvalidStateException("String not a valid string representation of this feature");
+		}
+		
+		value = value.replace(CategValue.class.getCanonicalName()+"=", "");
+		String cat = null;
+		double[] probs = null;
+		if(value.contains("[")){
+			value = value.replace("]", "");
+			String[] split = value.split("\\[");
+			cat = split[0].trim();
+			probs = ArrayUtils.string2ArrayDouble(split[1], ",");
+		} else {
+			cat = value;
+		}
+		
+		return probs==null ? new CategValue(cat) : new CategValue(cat,probs);
 	}
 
 	public boolean equals(Object obj) {

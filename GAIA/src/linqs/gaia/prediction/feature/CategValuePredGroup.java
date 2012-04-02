@@ -111,7 +111,7 @@ public class CategValuePredGroup implements CategoricalValuedGroup {
 	/**
 	 * Return total number of predictions
 	 */
-	public int numPredictions() {
+	public long numPredictions() {
 		return this.predictions.size();
 	}
 

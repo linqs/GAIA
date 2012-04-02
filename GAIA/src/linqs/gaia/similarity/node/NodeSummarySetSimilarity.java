@@ -27,13 +27,13 @@ import linqs.gaia.util.IteratorUtils;
  * Required Parameters:
  * <UL>
  * <LI> featureid-Feature ID of summary feature
- * <LI> neighborclass-Class of neighbors to compute.  If specified, compute weighted sum of the
  * </UL>
  * <p>
  * Optional Parameters:
  * <UL>
  * <LI> setsimclass-Class of set similarity measure to use.  Default is {@link CommonNeighbor}.
- * <LI> neighbor similarity to the set similarity of items in the feature as follows:
+ * <LI> neighborclass-Class of neighbors to compute.  If specified, compute weighted sum of the
+ * neighbor similarity to the set similarity of items in the feature as follows:
  * value = (1.0 - alpha)*(summarysimilarity) + alpha*(neighborhoodsimilarity).
  * Default is not to use neighborhood similarity.
  * <LI> alpha-Alpha to use in weighted combination.  Default is .5.

@@ -19,6 +19,7 @@ package linqs.gaia.feature.values;
 import java.io.Serializable;
 
 import linqs.gaia.exception.InvalidAssignmentException;
+import linqs.gaia.exception.InvalidStateException;
 import linqs.gaia.feature.NumFeature;
 
 /**
@@ -83,6 +84,17 @@ public class NumValue implements FeatureValue, Serializable {
 	 */
 	public String toString() {
 		return this.getClass().getCanonicalName()+"="+this.getNumber();
+	}
+	
+	public static NumValue parseString(String value) {
+		value = value.trim();
+		if(!value.startsWith(NumValue.class.getCanonicalName()+"=")) {
+			throw new InvalidStateException("String not a valid string representation of this feature");
+		}
+		
+		value = value.replace(NumValue.class.getCanonicalName()+"=", "");
+		
+		return new NumValue(Double.parseDouble(value));
 	}
 	
 	public boolean equals(Object obj) {

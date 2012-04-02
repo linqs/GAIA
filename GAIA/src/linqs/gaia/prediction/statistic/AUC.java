@@ -66,7 +66,7 @@ public class AUC extends BaseConfigurable implements Statistic {
 	private boolean initialize = true;
 	
 	private boolean isPO = false;
-	private int numpospred, numnegpred, total, totalpos;
+	private long numpospred, numnegpred, total, totalpos;
 	
 	private void initialize(PredictionGroup predictions) {
 		initialize = false;
@@ -221,14 +221,14 @@ public class AUC extends BaseConfigurable implements Statistic {
 		double cur_tpr = 0;
 		double cur_fpr = 0;
 		
-		List <SimplePair<Integer, Integer>> roc = compute_roc(tuples);
-		for(SimplePair<Integer, Integer> p : roc) {
+		List <SimplePair<Long, Long>> roc = compute_roc(tuples);
+		for(SimplePair<Long, Long> p : roc) {
 			P += p.getFirst();
 			N += p.getSecond();
 		}
 		
 		for(int q = 0; q < roc.size(); q++) {
-			SimplePair<Integer, Integer> p = roc.get(q);
+			SimplePair<Long, Long> p = roc.get(q);
 
 			tp_cum += p.getFirst();
 			fp_cum += p.getSecond();
@@ -254,10 +254,10 @@ public class AUC extends BaseConfigurable implements Statistic {
 		return auc;
 	}
 
-	private List <SimplePair<Integer, Integer>> compute_roc(List <SimplePair<Double, String>> tuples) {
-		List <SimplePair<Integer, Integer>> roc = new ArrayList <SimplePair<Integer, Integer>>();
-		int tp = 0;
-		int fp = 0;
+	private List<SimplePair<Long, Long>> compute_roc(List <SimplePair<Double, String>> tuples) {
+		List <SimplePair<Long, Long>> roc = new ArrayList <SimplePair<Long, Long>>();
+		long tp = 0;
+		long fp = 0;
 		double lastThresh = Double.NEGATIVE_INFINITY;
 		double curThresh = Double.NEGATIVE_INFINITY;
 		for(int q = 0; q < tuples.size(); q++) {
@@ -268,9 +268,9 @@ public class AUC extends BaseConfigurable implements Statistic {
 				// Print new point
 				lastThresh = curThresh;
 				if(tp == 0 && fp == 0) {
-					roc.add(new SimplePair<Integer, Integer> (0, 0));
+					roc.add(new SimplePair<Long, Long> (new Long(0), new Long(0)));
 				} else {
-					roc.add(new SimplePair<Integer, Integer>(tp, fp));
+					roc.add(new SimplePair<Long, Long>(tp, fp));
 				}
 				
 				tp = 0;
@@ -285,16 +285,16 @@ public class AUC extends BaseConfigurable implements Statistic {
 		}
 		
 		if(tp == 0 && fp == 0) {
-			roc.add(new SimplePair<Integer, Integer> (0, 0));
+			roc.add(new SimplePair<Long, Long> (new Long(0), new Long(0)));
 		} else {
-			roc.add(new SimplePair<Integer, Integer>(tp, fp));
+			roc.add(new SimplePair<Long, Long>(tp, fp));
 		}
 		
 		// Add point to correspond to predictions not explicitly provided
 		if(isPO) {
 			// Add last entry in roc to represent all nodes with a probability of 0.0
-			int nummissingpos = totalpos-numpospred;
-			int nummissingneg = total-totalpos-numnegpred;
+			long nummissingpos = totalpos-numpospred;
+			long nummissingneg = total-totalpos-numnegpred;
 			if(nummissingpos==0.0 && nummissingneg==0.0) {
 				// All predictions accounted for
 			} else {
@@ -304,7 +304,7 @@ public class AUC extends BaseConfigurable implements Statistic {
 					roc.remove(roc.size()-1);
 				}
 				
-				roc.add(new SimplePair<Integer, Integer>(totalpos-numpospred, total-totalpos-numnegpred));
+				roc.add(new SimplePair<Long, Long>(totalpos-numpospred, total-totalpos-numnegpred));
 			}
 		}
 

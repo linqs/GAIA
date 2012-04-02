@@ -29,14 +29,14 @@ public interface PositiveOnlyGroup extends PredictionGroup {
 	 * 
 	 * @return Return the total number
 	 */
-	int getNumTotal();
+	long getNumTotal();
 	
 	/**
 	 * Get the number of true positives
 	 * 
 	 * @return Number of true positives
 	 */
-	int getNumPositive();
+	long getNumPositive();
 	
 	/**
 	 * Get the value to use as the positive value

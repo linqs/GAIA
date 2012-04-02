@@ -237,7 +237,7 @@ public abstract class BaseConfigurable implements Configurable {
         	int end = matcher.end();
         	
         	String replacement = group.substring(2, group.length()-1);
-        	replacement = this.getStringParameter(replacement);
+        	replacement = this.getStringParameter(replacement, null);
         	if(replacement==null){
 				throw new ConfigurationException("No variable is defined for "
 						+group

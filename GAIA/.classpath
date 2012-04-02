@@ -17,5 +17,6 @@
 	<classpathentry kind="lib" path="lib/libsvm-3.0/libsvm.jar"/>
 	<classpathentry kind="lib" path="lib/junto-1.2.2/junto.jar"/>
 	<classpathentry kind="lib" path="lib/commons-math-2.2/commons-math-2.2.jar"/>
+	<classpathentry kind="lib" path="lib/jung-2beta1/jung-io-2.0-beta1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
