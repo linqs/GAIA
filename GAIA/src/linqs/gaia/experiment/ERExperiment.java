@@ -180,7 +180,7 @@ public class ERExperiment extends Experiment {
 						this.getStringParameter(prefix+"filedirectory"));
 			}
 			
-			predio.saveGraph(graph);
+			predio.saveGraph(predGraph);
 		}
 
 		// evaluate prediction
