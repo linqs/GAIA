@@ -57,7 +57,10 @@ import linqs.gaia.util.SimpleTimer;
  * Proceedings of the Twentieth International Conference on Machine Learning
  * (pp. 496-503). Washington, DC: AAAI.
  * </p>
- * 
+ * The relational features are implemented
+ * through defining and specifying {@link linqs.gaia.feature.DerivedFeature}
+ * for the items being predicted.
+ * <p>
  * Optional Parameters:
  * <UL>
  * <LI>nonrelclassifier-Vector based classifier ({@link VBClassifier}) to use on non-relational features,
