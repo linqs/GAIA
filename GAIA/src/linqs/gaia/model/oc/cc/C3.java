@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -125,6 +126,7 @@ import linqs.gaia.util.UnmodifiableList;
  * If set to "no", set labels within the iteration such that
  * the value of relational features are based on the most recent value, even with the same iteration,
  * of the labels.  Default is "yes".
+ * 
  * <LI> permanentcommitkpct-If "yes", at each iteration, only updates the most confident
  * (in terms of probability of the most likely value) items to their predicted values
  * at the end of each iteration.
@@ -149,13 +151,21 @@ import linqs.gaia.util.UnmodifiableList;
  * of values changed per iteration and stopping when there are no changes made,
  * with the predicted labels (excluding the probability distribution)
  * in a particular iteration.  Default is "no".
+ * <LI> minnumiterations-If specified, do not stop executing either by detecting
+ * convergence or oscillation unless this specified minimum number of oscillations
+ * has already been reached.
  * 
  * <LI> performstochastic-If "yes", instead of deterministically choosing the most
  * likely label at every iteration, do a stochastic sampling instead and select
  * the label from the distribution returned by the classifier.  Default is "no".
  * <LI> performstochastictemp-If "yes", instead of deterministically choosing the most
- * likely label at every iteration, do a stochastic sampling instead and select
- * the label from the distribution returned by the classifier.  Default is "no".
+ * likely label at every iteration, with probability (# current iteration/maximum number of iteration)
+ * do a stochastic sampling instead and select
+ * the label from the distribution returned by the classifier.
+ * Default is "no".
+ * <LI> stochastictempiter-If specified, instead of using the maximum number of iterations
+ * as the denominator of the probability defined for performstochastictemp, use
+ * the value as the denominator instead.
  * 
  * <LI> performsampling-If "yes", instead of performing the prediction by selecting
  * the most likely label at every iteration, a sampling procedure is performed
@@ -196,6 +206,9 @@ import linqs.gaia.util.UnmodifiableList;
  * is created for each iteration with two tab delimited colums, the first containing
  * a string representation of the object and the second a string representation of the feature value.
  * Only applicable if performstacking=yes.
+ * <LI>checklearningconvergence-If "yes", check for convergence when learning.
+ * Once convergence is detected, there is no need to learn any more levels.
+ * Default is "no".
  * 
  * <LI> printtrainderivetime-If "yes", print the time it takes to compute the features of the graphs
  * of the train items (computed using {@link GraphUtils#printDerivedTime(Graph)}.
@@ -233,6 +246,7 @@ public class C3 extends BaseConfigurable
 	protected int listsize;
 	
 	protected int numiterations = 10;
+	protected int minnumiterations = -1;
 	protected ItemOrder itemorder = null;
 	
 	protected List<String> targetschemaids;
@@ -259,6 +273,7 @@ public class C3 extends BaseConfigurable
 	
 	protected boolean performstochastic = false;
 	protected boolean performstochastictemp = false;
+	protected double stochastictempiter = 0;
 	
 	protected boolean performsampling = false;
 	protected int burnin = 0;
@@ -269,6 +284,7 @@ public class C3 extends BaseConfigurable
 	protected List<List<VBClassifier>> relvbclevellist;
 	protected boolean unlabeledstackingonly = false;
 	protected boolean emstacking = false;
+	protected boolean checklearningconvergence = false;
 	
 	protected int numthreads = -1;
 	protected boolean learninparallel = false;
@@ -394,6 +410,14 @@ public class C3 extends BaseConfigurable
 			return;
 		}
 		
+		// Get all the involved graphs
+		Set<Graph> allgraphs = new HashSet<Graph>();
+		for(Iterable<? extends Decorable> tiset: trainitems) {
+			for(Decorable d:tiset) {
+				allgraphs.add(((GraphItem) d).getGraph());
+			}
+		}
+		
 		// If semisupervised, bootstrap the unknown values prior
 		// to training the relational classifier.
 		// Note: We can probably extend this to bootstrap all
@@ -417,13 +441,6 @@ public class C3 extends BaseConfigurable
 					}
 					
 					traintestitems.add(newlist);
-				}
-			}
-			
-			Set<Graph> allgraphs = new HashSet<Graph>();
-			for(Iterable<? extends Decorable> tiset: trainitems) {
-				for(Decorable d:tiset) {
-					allgraphs.add(((GraphItem) d).getGraph());
 				}
 			}
 			
@@ -493,8 +510,14 @@ public class C3 extends BaseConfigurable
 		
 		// Stacking way
 		if(this.performstacking) {
+			// Create list of previous iterations to store
+			List<List<Map<Decorable,Object>>> prevvalues = null;
+			if(this.checklearningconvergence) {
+				prevvalues = new ArrayList<List<Map<Decorable,Object>>>(numiterations);
+			}
+			
 			// Learn a classifier for each level/iteration
-			for(int l=0; l<numiterations; l++) {		
+			for(int l=0; l<numiterations; l++) {
 				Map<SimplePair<Decorable,Integer>,FeatureValue> batchvalues
 					= new HashMap<SimplePair<Decorable,Integer>,FeatureValue>();
 				
@@ -508,6 +531,8 @@ public class C3 extends BaseConfigurable
 					List<VBClassifier> prevrelvbclist = this.relvbclevellist.get(l-1);
 					
 					if(learninparallel) {
+						// Parallelize predicted values if we allow
+						// for learning to be parallelized
 						Log.DEBUG("Initializing thread pool of size "+numthreads);
 						pool = Executors.newFixedThreadPool(numthreads);
 						futurelist = new LinkedList<Future<Integer>>();
@@ -558,7 +583,6 @@ public class C3 extends BaseConfigurable
 							Iterable<? extends Decorable> testitems = bootstraptrainitems.get(i);
 							VBClassifier currrelvbc = prevrelvbclist.get(i);
 							for(Decorable d:testitems) {
-								//d.setFeatureValue(predlabelfids[i], currrelvbc.predict(d));
 								batchvalues.put(new SimplePair<Decorable,Integer>(d, i),
 										currrelvbc.predict(d));
 							}
@@ -567,6 +591,8 @@ public class C3 extends BaseConfigurable
 				}
 				
 				if(unlabeledstackingonly) {
+					// Labeled instances, in the training set,
+					// will only be set to its current value
 					for(int i=0; i<listsize; i++) {
 						Iterable<? extends Decorable> currtrainitems = trainitems.get(i);
 						
@@ -730,6 +756,76 @@ public class C3 extends BaseConfigurable
 					di.setFeatureValue(predlabelfids[index], fv);
 				}
 				
+				/**************************************************************/
+				// Check if values for all items the same as the values
+				// assigned in an earlier iteration
+				if(this.checklearningconvergence) {
+					List<Map<Decorable,Object>> maplist =
+						new ArrayList<Map<Decorable,Object>>(this.listsize);
+					
+					// Get values for all items
+					for(int i=0; i<listsize; i++) {
+						String currsid = targetschemaids.get(i);
+						String currfid = predlabelfids[i];
+						
+						Map<Decorable,Object> dec2fv = new HashMap<Decorable,Object>();
+						for(Graph traingraph: allgraphs) {
+							Iterator<GraphItem> gitr = traingraph.getGraphItems(currsid);
+							while(gitr.hasNext()) {
+								GraphItem gi = gitr.next();
+								FeatureValue fv = gi.getFeatureValue(currfid);
+								dec2fv.put(gi, ignoreprobs ? fv.getStringValue() : fv);
+							}
+						}
+						
+						maplist.add(dec2fv);
+					}
+					
+					boolean oscillationreached = false;
+					int numprevs = prevvalues.size();
+					int p=0;
+					for(p=0; p<numprevs; p++) {				
+						boolean matchcurrent = true;
+						List<Map<Decorable,Object>> prevlist = prevvalues.get(p);
+						for(int j=0; j<this.listsize; j++) {
+							// Compare map objects
+							// If the values are the same,
+							// oscillation detected and break out
+							if(!prevlist.get(j).equals(maplist.get(j))) {
+								// At least one set of values doesn't match exactly so break
+								matchcurrent = false;
+								break;
+							}
+						}
+						
+						if(matchcurrent) {
+							// Current iteration matches the predicted
+							// values of a previous one
+							oscillationreached = true;
+							break;
+						}
+					}
+					
+					if(oscillationreached) {
+						// If oscillation is detected,
+						// stop, update the number of iterations, and update the number
+						// of vbc in saved list.  
+						this.relvbclevellist = this.relvbclevellist.subList(0, l);
+						this.numiterations = l;
+						break;
+					} else {
+						// Otherwise, keep going until 
+						// the maximum number of iterations is reached
+						
+						// Insert to the top of the list
+						// since the most likely oscillation probably
+						// occurred in a recent iteration
+						prevvalues.add(0, maplist);
+					}
+				}
+				
+				/**************************************************************/
+				
 				// Preprocess learning, prior to bootstrapping
 				preRelationalLearning(trainitems);
 				
@@ -756,8 +852,6 @@ public class C3 extends BaseConfigurable
 					
 					// If EM, train over all items (not just training set)
 					if(emstacking) {
-						Log.DEV("Learning from all: "+IteratorUtils.numIterable(traintestitems.get(i))
-								+ " instead of "+IteratorUtils.numIterable(trainitems.get(i)));
 						currtrainitems = traintestitems.get(i);
 					}
 					
@@ -802,6 +896,8 @@ public class C3 extends BaseConfigurable
 				}
 			}
 		} else {
+			// Handle case of non-stacking
+			
 			// Initialize pool for parallelization
 			if(learninparallel) {
 				Log.DEBUG("Initializing thread pool of size "+numthreads);
@@ -1142,7 +1238,7 @@ public class C3 extends BaseConfigurable
 				// (computed from the initial set of nodes) at every iteration.
 				// Otherwise, the percentage to commit at iteration i (starting at i=0) is (i+1)*(k percent).
 				double currkpct = permanentcommitkpct ? this.kpercent : (((double) i+1) * this.kpercent);
-				
+				currkpct = currkpct > 1 ? 1 : currkpct;
 				for(int j=0; j<this.listsize; j++) {
 					int currk = (int) (currkpct * index2num.get(j));
 					if(i==(this.numiterations-1)) {
@@ -1310,7 +1406,7 @@ public class C3 extends BaseConfigurable
 						FeatureValue sampledfv = new CategValue(sampledcat);
 						
 						if(performstochastic 
-							|| (performstochastictemp && rand.nextDouble() < (1.0-((double) i/(this.numiterations-1.0))))) {
+							|| (performstochastictemp && rand.nextDouble() < (1.0-((double) i/(this.stochastictempiter-1.0))))) {
 							di.setFeatureValue(targetfeatureids.get(index), sampledfv);
 						} else {
 							di.setFeatureValue(targetfeatureids.get(index), fv);
@@ -1418,7 +1514,7 @@ public class C3 extends BaseConfigurable
 						FeatureValue sampledfv = new CategValue(sampledcat);
 						
 						if(performstochastic 
-							|| (performstochastictemp && rand.nextDouble() < (1.0-((double) i/(this.numiterations-1.0))))) {
+							|| (performstochastictemp && rand.nextDouble() < (1.0-((double) i/(this.stochastictempiter-1.0))))) {
 							di.setFeatureValue(targetfeatureids.get(index), sampledfv);
 						} else {
 							di.setFeatureValue(targetfeatureids.get(index), fv);
@@ -1469,7 +1565,8 @@ public class C3 extends BaseConfigurable
 			// Test below to see whether or not to stop iterating
 			
 			// If no value has changed, convergence has occurred so stop
-			if(index2topk==null && checkconvergence && !checkoscillation && numupdates.numKeys()==0) {
+			// Note:  Not applicable if doing topK, checking oscillation, or the minimum number of iterations hasn't been reached.
+			if(index2topk==null && checkconvergence && !checkoscillation && numupdates.numKeys()==0 && i > minnumiterations) {
 				// Handle the special case of a pipeline ordering
 				if(itemorder instanceof PipelineOrder) {
 					PipelineOrder porder = (PipelineOrder) itemorder;
@@ -1482,6 +1579,7 @@ public class C3 extends BaseConfigurable
 					}
 				} else {
 					// If not doing topK and there are no more updates, break.
+					// Note:  Not doing topK is done by checking if index2topk==null above.
 					break;
 				}
 			}
@@ -1509,7 +1607,7 @@ public class C3 extends BaseConfigurable
 				int numprevs = prevvalues.size();
 				int p=0;
 				for(p=0; p<numprevs; p++) {
-					// Skip comparing to the previous one if
+					// Skip comparing to the previous one (always in index 0) if
 					// the labels have been known to change
 					if(p==0 && numupdates.numKeys()!=0) {
 						continue;
@@ -1537,7 +1635,7 @@ public class C3 extends BaseConfigurable
 				}
 				
 				// If all the items match, oscillation is reached
-				if(oscillationreached) {
+				if(oscillationreached && i > minnumiterations) {
 					// Print oscillation detected
 					if(printoscillation) {
 						Log.INFO("Reached an oscillation at "
@@ -1781,11 +1879,13 @@ public class C3 extends BaseConfigurable
 		ignoreprobs = this.getYesNoParameter("ignoreprobs", "no");
 		printoscillation = this.getYesNoParameter("printoscillation","no");
 		checkconvergence = this.getYesNoParameter("checkconvergence","no");
+		minnumiterations = this.getIntegerParameter("minnumiterations",-1);
 		
 		saveperiterdir = this.getStringParameter("saveperiterdir", null);
 		
 		performstochastic = this.getYesNoParameter("performstochastic","no");
 		performstochastictemp = this.getYesNoParameter("performstochastictemp","no");
+		stochastictempiter = this.getDoubleParameter("stochastictempiter", this.numiterations);
 		
 		performsampling = this.getYesNoParameter("performsampling","no");
 		burnin = this.getIntegerParameter("burnin",0);
@@ -1803,6 +1903,7 @@ public class C3 extends BaseConfigurable
 		}
 		unlabeledstackingonly = this.getYesNoParameter("unlabeledstackingonly","no");
 		emstacking = this.getYesNoParameter("emstacking","no");
+		checklearningconvergence = this.getYesNoParameter("checklearningconvergence","no");
 		
 		permanentcommitkpct = this.hasYesNoParameter("permanentcommitkpct", "yes");
 		if(this.hasParameter("kpercent")) {
