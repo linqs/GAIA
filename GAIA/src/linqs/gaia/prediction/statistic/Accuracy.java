@@ -40,7 +40,7 @@ import linqs.gaia.prediction.Weighted;
  * (in {@link linqs.gaia.prediction.statistic.SimpleBinaryMeasures SimpleBinaryMeasures})
  * in that the predicted value can be multiclass.
  * <p>
- * Required Parameters:
+ * Optional Parameters:
  * <UL>
  * <LI> weighted-If "yes", compute weighted accuracy.  Default is "no".
  * </UL>

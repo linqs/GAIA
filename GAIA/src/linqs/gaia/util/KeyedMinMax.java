@@ -14,30 +14,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package linqs.gaia.prediction;
+package linqs.gaia.util;
 
-import linqs.gaia.util.UnmodifiableSet;
-
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
- * Predictions where a multiple classes are predicted.
+ * Utility for computing Min and Max for certain keys
  * 
  * @author namatag
  *
+ * @param <K1> Primary Key
  */
-public interface MultiValue extends Prediction {	
-	/**
-	 * Get true class values
-	 * 
-	 * @return True value
-	 */
-	UnmodifiableSet<?> getTrueValues();
-	
-	/**
-	 * Get predicted class value
-	 * If no value was predicted, return an empty list.
-	 * 
-	 * @return Predicted value
-	 */
-	UnmodifiableSet<?> getPredValues();
+public class KeyedMinMax<K1> {
+    Map<K1, MinMax> minmaxs = Collections.synchronizedMap(new LinkedHashMap<K1, MinMax>());
+
+    public void add(K1 key, double value) {
+        if (!minmaxs.containsKey(key)) {
+            minmaxs.put(key, new MinMax());
+        }
+
+        minmaxs.get(key).addValue(value);
+    }
+
+    public MinMax getMinMax(K1 key) {
+        return minmaxs.get(key);
+    }
 }

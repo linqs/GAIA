@@ -1,19 +1,19 @@
 /*
-* This file is part of the GAIA software.
-* Copyright 2011 University of Maryland
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * This file is part of the GAIA software.
+ * Copyright 2011 University of Maryland
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package linqs.gaia.configurable;
 
 import java.io.BufferedReader;
@@ -49,13 +49,13 @@ public abstract class BaseConfigurable implements Configurable {
 	public static final String COMMENT_STOP = "COMMENT###";
 	public static final char ESCAPE_CHAR = '\\';
 	public static final String LOADFILE = "loadfile ";
-	
+
 	public static final Pattern envpattern = Pattern.compile("\\$\\{[^\\}\\n]+\\}");
 	public static final Pattern varpattern = Pattern.compile("@\\{[^\\}\\n]+\\}");
-	
+
 	private HashMap<String, String> parameters = new HashMap<String, String>();
 	private String cid = null;
-	
+
 	public double getDoubleParameter(String name) {
 		String value = this.getStringParameter(name);
 		double dvalue;
@@ -64,10 +64,10 @@ public abstract class BaseConfigurable implements Configurable {
 		} catch(Exception e) {
 			throw new ConfigurationException("Value is not a double: "+name+VALDELIM+value);
 		}
-		
+
 		return dvalue;
 	}
-	
+
 	public int getIntegerParameter(String name) {
 		String value = this.getStringParameter(name);
 		int dvalue;
@@ -76,15 +76,15 @@ public abstract class BaseConfigurable implements Configurable {
 		} catch(Exception e) {
 			throw new ConfigurationException("Value is not an integer: "+name+VALDELIM+value);
 		}
-		
+
 		return dvalue;
 	}
 
 	public String getStringParameter(String name) {
-		
+
 		String currname = this.findMostSpecificMatch(name);
 		String value = this.parameters.get(currname);
-		
+
 		// Note: This will handle all cases where
 		// we are trying to get a parameter but
 		// the parameter is not defined.
@@ -93,18 +93,18 @@ public abstract class BaseConfigurable implements Configurable {
 			if(this.getCID()!=null){
 				message += " or "+this.getCID()+CIDDELIM+name;
 			}
-			
+
 			message += " (Defined are: "+this.allParameters2String()+")";
-			
+
 			throw new ConfigurationException(message);
 		}
-		
+
 		return value;
 	}
-	
+
 	public String getCaseParameter(String name, String[] cases) {
 		String val = this.getStringParameter(name);
-		
+
 		List<String> currcases = Arrays.asList(cases);
 		if(currcases.contains(val)) {
 			return val;
@@ -113,10 +113,10 @@ public abstract class BaseConfigurable implements Configurable {
 					+ name +"="+val+" where valid are "+ArrayUtils.array2String(cases, ","));
 		}
 	}
-	
+
 	public boolean getYesNoParameter(String name) {
 		String val = this.getStringParameter(name);
-		
+
 		if(val.equalsIgnoreCase("yes")) {
 			return true;
 		} else if(val.equalsIgnoreCase("no")) {
@@ -126,7 +126,7 @@ public abstract class BaseConfigurable implements Configurable {
 					+ name +"="+val);
 		}
 	}
-	
+
 	public double getDoubleParameter(String name, double defaultvalue) {
 		String value = this.getStringParameter(name, ""+defaultvalue);
 		double dvalue;
@@ -135,10 +135,10 @@ public abstract class BaseConfigurable implements Configurable {
 		} catch(Exception e) {
 			throw new ConfigurationException("Value is not a double: "+name+VALDELIM+value);
 		}
-		
+
 		return dvalue;
 	}
-	
+
 	public int getIntegerParameter(String name, int defaultvalue) {
 		String value = this.getStringParameter(name, ""+defaultvalue);
 		int dvalue;
@@ -147,28 +147,28 @@ public abstract class BaseConfigurable implements Configurable {
 		} catch(Exception e) {
 			throw new ConfigurationException("Value is not an integer: "+name+VALDELIM+value);
 		}
-		
+
 		return dvalue;
 	}
 
 	public String getStringParameter(String name, String defaultvalue) {
-		
+
 		String currname = this.findMostSpecificMatch(name);
 		String value = this.parameters.get(currname);
-		
+
 		// Note: This will handle all cases where
 		// we are trying to get a parameter but
 		// the parameter is not defined.
 		if(value==null){
 			value = defaultvalue;
 		}
-		
+
 		return value;
 	}
-	
+
 	public String getCaseParameter(String name, String[] cases, String defaultvalue) {
 		String val = this.getStringParameter(name, defaultvalue);
-		
+
 		List<String> currcases = Arrays.asList(cases);
 		if(currcases.contains(val)) {
 			return val;
@@ -177,10 +177,10 @@ public abstract class BaseConfigurable implements Configurable {
 					+ name +"="+val+" where valid are "+ArrayUtils.array2String(cases, ","));
 		}
 	}
-	
+
 	public boolean getYesNoParameter(String name, String defaultvalue) {
 		String val = this.getStringParameter(name, defaultvalue);
-		
+
 		if(val.equalsIgnoreCase("yes")) {
 			return true;
 		} else if(val.equalsIgnoreCase("no")) {
@@ -190,11 +190,11 @@ public abstract class BaseConfigurable implements Configurable {
 					+ name +"="+val);
 		}
 	}
-	
+
 	public void removeParameter(String name) {
 		// See if value is defined and throw away if it isn't.
 		this.getStringParameter(name);
-		
+
 		// Remove the matching parameter value
 		name = this.findMostSpecificMatch(name);
 		this.parameters.remove(name);
@@ -204,54 +204,58 @@ public abstract class BaseConfigurable implements Configurable {
 		if(value == null) {
 			throw new InvalidStateException("Parameter value cannot be null: "+name+"=null");
 		}
-		
+
 		// Trim name and value to deal with extra spaces
 		name = name.trim();
 		value = value.trim();
-		
+		value = processValueString(name,value);
+
+		parameters.put(name.intern(), value);
+	}
+
+	private String processValueString(String name, String value) {
 		// Update environment variables in value
 		String newvalue = value;
 		Matcher matcher = envpattern.matcher(value);
-        while (matcher.find()) {
-        	String group = matcher.group();
-        	int start = matcher.start();
-        	int end = matcher.end();
-        	
-        	String replacement = group.substring(2, group.length()-1);
-        	replacement = System.getenv(replacement);
-        	if(replacement==null){
+		while (matcher.find()) {
+			String group = matcher.group();
+			int start = matcher.start();
+			int end = matcher.end();
+
+			String replacement = group.substring(2, group.length()-1);
+			replacement = System.getenv(replacement);
+			if(replacement==null){
 				throw new ConfigurationException("No variable is defined for "
 						+group
 						+" from configuration "+name+"="+value);
 			}
-        	
-        	newvalue = newvalue.substring(0, start)+replacement+newvalue.substring(end);
-        	matcher = envpattern.matcher(newvalue);
-        }
-		
+
+			newvalue = newvalue.substring(0, start)+replacement+newvalue.substring(end);
+			matcher = envpattern.matcher(newvalue);
+		}
+
 		// Update internal variable in value
 		matcher = varpattern.matcher(newvalue);
-        while (matcher.find()) {
-        	String group = matcher.group();
-        	int start = matcher.start();
-        	int end = matcher.end();
-        	
-        	String replacement = group.substring(2, group.length()-1);
-        	replacement = this.getStringParameter(replacement, null);
-        	if(replacement==null){
+		while (matcher.find()) {
+			String group = matcher.group();
+			int start = matcher.start();
+			int end = matcher.end();
+
+			String replacement = group.substring(2, group.length()-1);
+			replacement = this.getStringParameter(replacement, null);
+			if(replacement==null){
 				throw new ConfigurationException("No variable is defined for "
 						+group
 						+" from configuration "+name+"="+value);
 			}
-        	
-        	newvalue = newvalue.substring(0, start)+replacement+newvalue.substring(end);
-        	matcher = varpattern.matcher(newvalue);
-        }
-        value = newvalue;
+
+			newvalue = newvalue.substring(0, start)+replacement+newvalue.substring(end);
+			matcher = varpattern.matcher(newvalue);
+		}
 		
-		parameters.put(name.intern(), value);
+		return newvalue;
 	}
-	
+
 	public void setParameter(String name, Number value) {
 		this.setParameter(name, value.toString());
 	}
@@ -263,28 +267,28 @@ public abstract class BaseConfigurable implements Configurable {
 			if(arg.length()==0) {
 				continue;
 			}
-			
+
 			int index = arg.indexOf(VALDELIM);
-			
+
 			if(index == -1) {
 				throw new ConfigurationException("Malformed parameter: "+args);
 			}
-			
+
 			String key = arg.substring(0, index);
 			String value = arg.substring(index+1);
-			
+
 			this.setParameter(key, value);
 		}
 	}
-	
+
 	public void loadParametersFile(String filename) {
 		this.loadParametersFile(filename, new ArrayList<String>());
 	}
-	
+
 	public void setParametersFile(String filename) {
 		this.loadParametersFile(filename, new ArrayList<String>());
 	}
-	
+
 	/**
 	 * Helper function to prevent a file from loading itself
 	 * 
@@ -303,12 +307,13 @@ public abstract class BaseConfigurable implements Configurable {
 					String filenames[] = line.split("\\s+");
 					for(int i=1; i<filenames.length; i++){
 						String otherfile = filenames[i];
+						otherfile = processValueString(LOADFILE, otherfile);
 						
 						// Done to prevent loops
 						if(loadedfiles.contains(otherfile)){
 							throw new ConfigurationException("File was previously loaded: "+otherfile);
 						}
-						
+
 						loadedfiles.add(otherfile);
 						this.loadParametersFile(otherfile, loadedfiles);
 					}
@@ -320,7 +325,7 @@ public abstract class BaseConfigurable implements Configurable {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	/**
 	 * Return next non comment line.
 	 * 
@@ -329,7 +334,7 @@ public abstract class BaseConfigurable implements Configurable {
 	 * @throws Exception
 	 */
 	private String getNonCommentLine(BufferedReader br) throws Exception {
-		
+
 		// Skip lines starting with COMMENT_CHAR and lines which consists of whitespace
 		String line = br.readLine();
 		boolean incomment = false;
@@ -349,15 +354,15 @@ public abstract class BaseConfigurable implements Configurable {
 					break;
 				}
 			}
-			
+
 			// Get next line
 			line = br.readLine();
 		}
-		
+
 		if(line==null) {
 			return null;
 		}
-		
+
 		// Support splitting configuration over multiple lines
 		if(line.endsWith(""+ESCAPE_CHAR)) {
 			line = line.substring(0,line.length()-1);
@@ -366,7 +371,7 @@ public abstract class BaseConfigurable implements Configurable {
 				line += append;
 			}
 		}
-		
+
 		// Remove anything in the line past the comment character
 		int index = line.indexOf(COMMENT_CHAR);
 		while(index!=-1) {
@@ -375,7 +380,7 @@ public abstract class BaseConfigurable implements Configurable {
 				if(index >= line.length()) {
 					break;
 				}
-				
+
 				index = line.indexOf(COMMENT_CHAR, index + 1);
 				continue;
 			} else {
@@ -383,33 +388,33 @@ public abstract class BaseConfigurable implements Configurable {
 				break;
 			}
 		}
-		
+
 		// Remove all escape symbols from the escaped characters
 		line = line.replaceAll("\\\\"+COMMENT_CHAR, COMMENT_CHAR);
-		
+
 		return line;
 	}
 
 	public boolean hasParameter(String name) {
 		name = this.findMostSpecificMatch(name);
-		
+
 		if(name == null){
 			return false;
 		}
-		
+
 		return parameters.containsKey(name);
 	}
-	
+
 	public boolean hasParameter(String name, String value) {
 		if(!hasParameter(name)){
 			return false;
 		}
-		
+
 		name = this.findMostSpecificMatch(name);
-		
+
 		return parameters.get(name).equals(value);
 	}
-	
+
 	public boolean hasYesNoParameter(String name, String value) {
 		if(!hasParameter(name)){
 			return false;
@@ -418,12 +423,12 @@ public abstract class BaseConfigurable implements Configurable {
 				throw new InvalidStateException("Requesting an invalid value for yesno parameter: "+
 						name +" = "+value);
 			}
-			
+
 			String currvalue = getYesNoParameter(name) ? "yes" : "no";
 			return currvalue.equals(value);
 		}
 	}
-	
+
 	public Map<String, String> getAllParameters(){
 		return Collections.unmodifiableMap(this.parameters);
 	}
@@ -454,7 +459,7 @@ public abstract class BaseConfigurable implements Configurable {
 	public void setCID(String cid) {
 		this.cid = cid==null ? null : cid.trim();
 	}
-	
+
 	/**
 	 * Returns the most specific matching attribute or the original
 	 * name if no more specific match is found.
@@ -464,7 +469,7 @@ public abstract class BaseConfigurable implements Configurable {
 	 */
 	private String findMostSpecificMatch(String name) {
 		String newname = name;
-		
+
 		// Match the most specific cid first then loosen match
 		// i.e. If name=val and CID=A, match A.val.
 		// If a match can't be find, look for val.
@@ -475,7 +480,7 @@ public abstract class BaseConfigurable implements Configurable {
 				newname = paramname;
 			}
 		}
-		
+
 		return newname;
 	}
 

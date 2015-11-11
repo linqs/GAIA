@@ -150,7 +150,6 @@ public class AdjacencyMatrix extends BaseConfigurable implements Converter<doubl
 			esids.addAll(Arrays.asList(edgesids.split(",")));
 		}
 		
-		int numedges=0;
 		for(String curresid:esids) {
 			// Verify directionality of edge
 			SchemaType type = g.getSchemaType(curresid);
@@ -225,8 +224,6 @@ public class AdjacencyMatrix extends BaseConfigurable implements Converter<doubl
 						adjacency[index2][index1]=1;
 					}
 				}
-				
-				numedges++;
 			}
 		}
 		

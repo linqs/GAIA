@@ -21,57 +21,78 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Store object in an List keyed by a given key.
- * Can be useful for hashing or just keeping objects in
- * separate lists by key.
+ * Store object in an List keyed by a given key. Can be useful for hashing or
+ * just keeping objects in separate lists by key.
  * 
  * @author namatag
- *
+ * 
  */
-public class KeyedList<K,V> extends KeyedCollection<List<V>,K,V>{
-	private Integer defaultsize = null;
-	private boolean returnempty = false;
-	
-	public KeyedList(){
-		super();
-	}
-	
-	/**
-	 * Constructor
-	 * 
-	 * @param defaultsize Default size of newly created lists
-	 * @param returnempty If true, return an empty set when getting
-	 * a collection which has no items.  Otherwise, return a null.
-	 */
-	public KeyedList(int defaultsize, boolean returnempty){
-		super();
-		this.defaultsize = defaultsize;
-		this.returnempty = returnempty;
-	}
-	
-	/**
-	 * Get list for given object.
-	 * 
-	 * @param key Key for list
-	 * @return List of given key
-	 */
-	public List<V> getList(K key){
-		List<V> list = this.getCollection(key);
-		
-		if(returnempty) {
-			return list==null ? new ArrayList<V>(this.createCollection()) 
-					: new ArrayList<V>(list);
-		} else {
-			return list==null ? null : new ArrayList<V>(list);
-		}
-	}
+public class KeyedList<K, V> extends KeyedCollection<List<V>, K, V> {
+    private Integer defaultsize = null;
+    private boolean returnempty = false;
 
-	@Override
-	protected List<V> createCollection() {
-		if(this.defaultsize==null) {
-			return Collections.synchronizedList(new ArrayList<V>());
-		} else {
-			return Collections.synchronizedList(new ArrayList<V>(this.defaultsize));
-		}
-	}
+    public KeyedList() {
+        super();
+    }
+
+    /**
+     * Constructor
+     * 
+     * @param defaultsize
+     *            Default size of newly created lists
+     * @param returnempty
+     *            If true, return an empty set when getting a collection which
+     *            has no items. Otherwise, return a null.
+     */
+    public KeyedList(int defaultsize, boolean returnempty) {
+        super();
+        this.defaultsize = defaultsize;
+        this.returnempty = returnempty;
+    }
+
+    /**
+     * Get list for given object.
+     * 
+     * @param key
+     *            Key for list
+     * @return List of given key
+     */
+    public List<V> getList(K key) {
+        List<V> list = this.getCollection(key);
+
+        if (returnempty) {
+            return list == null ? new ArrayList<V>(this.createCollection())
+                    : new ArrayList<V>(list);
+        } else {
+            return list == null ? null : new ArrayList<V>(list);
+        }
+    }
+
+    /**
+     * Get the original list for given object. Edits to the list will be to the
+     * stored list itself.
+     * 
+     * @param key
+     *            Key for list
+     * @return List of given key
+     */
+    public List<V> getEditableList(K key) {
+        List<V> list = this.getCollection(key);
+
+        if (returnempty) {
+            return list == null ? new ArrayList<V>(this.createCollection())
+                    : list;
+        } else {
+            return list == null ? null : list;
+        }
+    }
+
+    @Override
+    protected List<V> createCollection() {
+        if (this.defaultsize == null) {
+            return Collections.synchronizedList(new ArrayList<V>());
+        } else {
+            return Collections.synchronizedList(new ArrayList<V>(this.defaultsize));
+        }
+    }
 }
